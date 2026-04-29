@@ -2,5 +2,5 @@
     "watch": ["src"],
     "ignore": ["src/**/*.spec.ts"],
     "ext": "ts, ejs, json",
-    "exec": "node --loader ts-node/esm ./src/app.ts"
+    "exec": "tsx ./src/app.ts"
 }
