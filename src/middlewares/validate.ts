@@ -4,7 +4,7 @@ import type { Response, Request, NextFunction } from 'express';
 
 // Global Validator
 // Passing Zod schema to the validate data and show error if something not valid 
-export const validate = (schema:Schema) => (req:Request, res:Response, next:NextFunction) => {
+export const validate = (schema:Schema) => (req:Request, res:Response, next:NextFunction) => { // How to use?
   const result = schema.safeParse(req.body);
 
   if (!result.success) {
