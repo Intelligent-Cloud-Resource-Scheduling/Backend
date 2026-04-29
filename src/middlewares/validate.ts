@@ -1,14 +1,13 @@
-import type { Schema } from 'zod/v3';
-import { AppError } from '../utils/AppError.js';
+import { AppError } from '@/utils/AppError.js';
 import type { Response, Request, NextFunction } from 'express';
 
 // Global Validator
 // Passing Zod schema to the validate data and show error if something not valid 
-export const validate = (schema:Schema) => (req:Request, res:Response, next:NextFunction) => { // How to use?
+export const validate = (schema:any) => (req:Request, res:Response, next:NextFunction) => { // How to use?
   const result = schema.safeParse(req.body);
 
   if (!result.success) {
-    const details = result.error.errors.map(e => ({
+    const details = result.error.errors.map((e:any) => ({
       field: e.path.join('.'),
       message: e.message,
     }));
