@@ -1,7 +1,7 @@
 import type { Response } from 'express';
 import type { ApiResponse } from '../types/unifiedResponse.js';
 
-export const sendSuccess = <T>(res: Response, data: any, message = 'Success', status = 200) : Response<ApiResponse<T>> => {
+export const sendSuccess = <T>(res: Response, data: any, message = 'Success', status = 200) : Response<ApiResponse<T>> => { // How to use?
   return res.status(status).json({
     success: true,
     message,
@@ -10,7 +10,7 @@ export const sendSuccess = <T>(res: Response, data: any, message = 'Success', st
   });
 };
 
-export const sendError = <T>(res: Response, err: any) : Response<ApiResponse<T>> => {
+export const sendError = <T>(res: Response, err: any) : Response<ApiResponse<T>> => { // How to use?
   return res.status(err.status || 500).json({
     success: false,
     message: err.message || 'Internal Server Error',
