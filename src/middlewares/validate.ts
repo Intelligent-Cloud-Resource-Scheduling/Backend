@@ -1,4 +1,4 @@
-import { AppError } from '@/utils/AppError.js';
+import { AppError } from '../utils/AppError.js';
 import type { Response, Request, NextFunction } from 'express';
 
 // Global Validator

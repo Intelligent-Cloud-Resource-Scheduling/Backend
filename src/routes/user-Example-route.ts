@@ -1,11 +1,11 @@
 // modules/user.ts
 import { Router } from 'express';
-import { prisma } from '@/config/prisma.js';
-import { sendSuccess } from '@/utils/response.js';
-import { asyncHandler } from '@/middlewares/asyncHandler.js';
-import { validate } from '@/middlewares/validate.js';
+import { prisma } from '../config/prisma.js';
+import { sendSuccess } from '../utils/response.js';
+import { asyncHandler } from '../middlewares/asyncHandler.js';
+import { validate } from '../middlewares/validate.js';
 import { z } from 'zod';
-import { AppError } from '@/utils/AppError.js';
+import { AppError } from '../utils/AppError.js';
 
 const router = Router();
 
