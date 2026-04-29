@@ -3,7 +3,7 @@ import { sendError } from '../utils/response.js';
 import type { Response, Request, NextFunction } from 'express';
 
 export const errorHandler = <T>(err:any, req: Request, res: Response, next: NextFunction) : Response<ApiResponse<T>> => { // How to use?
-  // hide internal details
+  // hide internal details to not exploid any internal states about the server for the user if internal server error.
   if (process.env.NODE_ENV === 'production' && err.status === 500) {
     console.log(err)
     err.message = 'Something went wrong';
