@@ -1,14 +1,139 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
+model admins {
+  id         Int       @id @default(autoincrement())
+  uuid       String    @unique @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  email      String    @unique
+  password   String
+  created_at DateTime? @default(now()) @db.Timestamp(6)
 }
 
-model User {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
-  name  String?
+model batch_processes {
+  id             Int       @id @default(autoincrement())
+  batch_uuid     String    @db.Uuid
+  process_uuid   String    @db.Uuid
+  process_status String?
+  created_at     DateTime? @default(now()) @db.Timestamp(6)
+  batches        batches   @relation(fields: [batch_uuid], references: [uuid], onDelete: Cascade, onUpdate: NoAction, map: "fk_bp_batch")
+  processes      processes @relation(fields: [process_uuid], references: [uuid], onDelete: Cascade, onUpdate: NoAction, map: "fk_bp_process")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model batches {
+  id              Int               @id @default(autoincrement())
+  uuid            String            @unique @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  vm_uuid         String?           @db.Uuid
+  status          String?
+  created_at      DateTime?         @default(now()) @db.Timestamp(6)
+  batch_processes batch_processes[]
+  vms             vms?              @relation(fields: [vm_uuid], references: [uuid], onUpdate: NoAction, map: "fk_batch_vm")
+  processes       processes[]
+  vm_history      vm_history[]
+
+  @@index([vm_uuid], map: "idx_batch_vm_uuid")
+}
+
+model plans {
+  id                   Int       @id @default(autoincrement())
+  uuid                 String    @unique @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name                 String
+  description          String?
+  price                Float?    @default(0)
+  max_uploads_per_week Int?      @default(0)
+  is_hidden            Boolean?  @default(false)
+  created_at           DateTime? @default(now()) @db.Timestamp(6)
+  users                users[]
+}
+
+model process_history {
+  id           Int       @id @default(autoincrement())
+  process_uuid String    @db.Uuid
+  status       String
+  changed_at   DateTime? @default(now()) @db.Timestamp(6)
+  processes    processes @relation(fields: [process_uuid], references: [uuid], onDelete: Cascade, onUpdate: NoAction, map: "fk_process_history")
+}
+
+model processes {
+  id              Int               @id @default(autoincrement())
+  uuid            String            @unique @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_uuid       String            @db.Uuid
+  video_uuid      String            @db.Uuid
+  quality         String?
+  fps             Int?
+  duration        Float?
+  batch_uuid      String?           @db.Uuid
+  created_at      DateTime?         @default(now()) @db.Timestamp(6)
+  batch_processes batch_processes[]
+  process_history process_history[]
+  batches         batches?          @relation(fields: [batch_uuid], references: [uuid], onUpdate: NoAction, map: "fk_process_batch")
+  users           users             @relation(fields: [user_uuid], references: [uuid], onDelete: Cascade, onUpdate: NoAction, map: "fk_process_user")
+  video_uploads   video_uploads     @relation(fields: [video_uuid], references: [uuid], onDelete: Cascade, onUpdate: NoAction, map: "fk_process_video")
+
+  @@index([batch_uuid], map: "idx_process_batch_uuid")
+  @@index([user_uuid], map: "idx_process_user_uuid")
+}
+
+model users {
+  id            Int             @id @default(autoincrement())
+  uuid          String          @unique @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  email         String          @unique
+  password      String
+  name          String
+  plan_uuid     String?         @db.Uuid
+  created_at    DateTime?       @default(now()) @db.Timestamp(6)
+  processes     processes[]
+  plans         plans?          @relation(fields: [plan_uuid], references: [uuid], onUpdate: NoAction, map: "fk_user_plan")
+  video_uploads video_uploads[]
+
+  @@index([uuid], map: "idx_users_uuid")
+}
+
+model video_uploads {
+  id            Int         @id @default(autoincrement())
+  uuid          String      @unique @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_uuid     String      @db.Uuid
+  s3_video_uuid String
+  name          String?
+  size          BigInt?
+  duration      Float?
+  is_deleted    Boolean?    @default(false)
+  created_at    DateTime?   @default(now()) @db.Timestamp(6)
+  processes     processes[]
+  users         users       @relation(fields: [user_uuid], references: [uuid], onDelete: Cascade, onUpdate: NoAction, map: "fk_video_user")
+
+  @@index([user_uuid], map: "idx_videos_user_uuid")
+}
+
+model vm_history {
+  id         Int       @id @default(autoincrement())
+  vm_uuid    String    @db.Uuid
+  batch_uuid String?   @db.Uuid
+  duration   Float?
+  cost       Float?
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  batches    batches?  @relation(fields: [batch_uuid], references: [uuid], onUpdate: NoAction, map: "fk_vm_history_batch")
+  vms        vms       @relation(fields: [vm_uuid], references: [uuid], onDelete: Cascade, onUpdate: NoAction, map: "fk_vm_history_vm")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model vms {
+  id         Int          @id @default(autoincrement())
+  uuid       String       @unique @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name       String
+  cores      Int
+  rams       Int
+  cost       Float
+  status     String?      @default("Idle")
+  created_at DateTime?    @default(now()) @db.Timestamp(6)
+  batches    batches[]
+  vm_history vm_history[]
+
+  @@index([status], map: "idx_vm_status")
 }
