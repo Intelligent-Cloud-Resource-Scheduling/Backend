@@ -1,6 +1,12 @@
 import '@/config/env.js';
 import App from "@/server.js";
 
-App.listen(process.env.PORT, () => {
-    console.log("Server running on port 3200")
-})
+const port = process.env.PORT ?? 3500;
+const server = App.listen(port, () => {
+    console.log(`Server running on port ${port}`);
+});
+
+server.on("error", (err) => {
+    console.error("Server error:", err);
+});
+
