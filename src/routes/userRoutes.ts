@@ -6,7 +6,7 @@ import { asyncHandler } from '../middlewares/asyncHandler.js';
 import { validate } from '../middlewares/validate.js';
 import { z } from 'zod';
 import { AppError } from '../utils/AppError.js';
-import { getUser, loginUser, registerUser } from '@/controllers/userController.js';
+import { getAllUsers, getUser, loginUser, registerUser } from '@/controllers/userController.js';
 
 const router = Router();
 
@@ -24,5 +24,6 @@ const loginUserSchema = z.object({
 router.post('/register', validate(registerUserSchema), asyncHandler(registerUser));
 router.post('/login', validate(loginUserSchema), asyncHandler(loginUser));
 router.get('/:uuid', asyncHandler(getUser))
+router.get('/', asyncHandler(getAllUsers))
 
 export default router;

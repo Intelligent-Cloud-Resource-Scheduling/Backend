@@ -73,10 +73,30 @@ export const getUser = async (req: Request, res: Response) => {
   })
 
   if(!user)  {
-    throw new AppError("Invalid credentials", 400, "INVALID_CREDENTIALS");
+    throw new AppError("User not found", 404, "NOT_FOUND");
   }
 
   const { password: _, ...userWithouPassword } = user;
 
   return sendSuccess(res, userWithouPassword, 'User data retrieved successfully.')
+}
+
+export const getAllUsers = async (req: Request, res: Response) => {
+  const users = await prisma.users.findMany({
+    select: {
+      id: true,
+      uuid: true,
+      email: true,
+      name: true,
+      plan_uuid: true,
+      created_at: true
+    }
+  });
+
+  if(!users) {
+    throw new AppError("There are no users.", 404, "NOT_FOUND");
+  }
+
+  sendSuccess(res, users, "All users retrieved successfully.")
+  
 }
