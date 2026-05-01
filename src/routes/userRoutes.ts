@@ -6,7 +6,7 @@ import { asyncHandler } from '../middlewares/asyncHandler.js';
 import { validate } from '../middlewares/validate.js';
 import { z } from 'zod';
 import { AppError } from '../utils/AppError.js';
-import { loginUser, registerUser } from '@/controllers/userController.js';
+import { getUser, loginUser, registerUser } from '@/controllers/userController.js';
 
 const router = Router();
 
@@ -23,21 +23,6 @@ const loginUserSchema = z.object({
 
 router.post('/register', validate(registerUserSchema), asyncHandler(registerUser));
 router.post('/login', validate(loginUserSchema), asyncHandler(loginUser));
-
-// GET USER
-router.get(
-  '/:id',
-  asyncHandler(async (req, res, next) => {
-    const user = await prisma.users.findUnique({
-      where: { id: Number(req.params.id) },
-    });
-
-    if (!user) {
-      throw new AppError('User not found', 404, 'USER_NOT_FOUND');
-    }
-
-    return sendSuccess(res, user);
-  })
-);
+router.get('/:uuid', asyncHandler(getUser))
 
 export default router;

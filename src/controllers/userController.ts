@@ -57,3 +57,26 @@ export const loginUser = async (req: Request, res: Response) => {
 
   return sendSuccess(res, loginRes, 'Logged in successfully.');
 }
+
+export const getUser = async (req: Request, res: Response) => {
+  const { uuid } = req.params;
+
+  // Type Narrowing
+  if (typeof uuid !== 'string') {
+    throw new AppError("Invalid UUID format", 400, 'BAD_REQUEST');
+  }
+
+  const user = await prisma.users.findFirst({
+    where: {
+      uuid
+    }
+  })
+
+  if(!user)  {
+    throw new AppError("Invalid credentials", 400, "INVALID_CREDENTIALS");
+  }
+
+  const { password: _, ...userWithouPassword } = user;
+
+  return sendSuccess(res, userWithouPassword, 'User data retrieved successfully.')
+}
