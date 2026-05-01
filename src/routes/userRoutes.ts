@@ -23,7 +23,7 @@ const loginUserSchema = z.object({
 
 router.post('/register', validate(registerUserSchema), asyncHandler(registerUser));
 router.post('/login', validate(loginUserSchema), asyncHandler(loginUser));
+router.get('/all', asyncHandler(getAllUsers))
 router.get('/:uuid', asyncHandler(getUser))
-router.get('/', asyncHandler(getAllUsers))
 
 export default router;
