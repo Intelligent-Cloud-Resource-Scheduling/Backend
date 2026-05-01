@@ -6,17 +6,23 @@ import { asyncHandler } from '../middlewares/asyncHandler.js';
 import { validate } from '../middlewares/validate.js';
 import { z } from 'zod';
 import { AppError } from '../utils/AppError.js';
-import { registerUser } from '@/controllers/userController.js';
+import { loginUser, registerUser } from '@/controllers/userController.js';
 
 const router = Router();
 
-const createUserSchema = z.object({
+const registerUserSchema = z.object({
   email: z.email(),
   name: z.string().min(2),
   password: z.string().min(6)
 });
 
-router.post('/register', validate(createUserSchema), asyncHandler(registerUser));
+const loginUserSchema = z.object({
+  email: z.email(),
+  password: z.string()
+})
+
+router.post('/register', validate(registerUserSchema), asyncHandler(registerUser));
+router.post('/login', validate(loginUserSchema), asyncHandler(loginUser));
 
 // GET USER
 router.get(
