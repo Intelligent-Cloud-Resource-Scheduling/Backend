@@ -40,6 +40,24 @@ export const createPlan = async(req: Request, res:Response) => {
     return sendSuccess(res, plan, "Plan created successfully", 201);
 }
 
+export const getPlanDetails = async(req:Request, res:Response) => {
+    const { uuid } = req.params;
+    
+    if(typeof uuid !== 'string') {
+        throw new AppError("Invalid UUID format", 400, ERRORS.E400);
+    }
+
+    const existingPlan = await prisma.plans.findUnique({
+        where: {uuid}
+    })
+
+    if(!existingPlan){
+        throw new AppError("Plan not found", 404, ERRORS.E404);
+    }
+
+    return sendSuccess(res, existingPlan, "Plan fetched successfully", 200);
+}
+
 export const updatePlan = async(req: Request, res:Response) => {
     const { uuid } = req.params;
     const { name, description, price, max_uploads_per_week } = req.body;
@@ -89,3 +107,4 @@ export const updatePlan = async(req: Request, res:Response) => {
 
     return sendSuccess(res, updatedPlan, "Plan updates successfully", 200);
 }
+

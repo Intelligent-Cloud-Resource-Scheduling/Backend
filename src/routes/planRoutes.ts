@@ -1,4 +1,4 @@
-import { createPlan, updatePlan } from "@/controllers/planController.js";
+import { createPlan, getPlanDetails, updatePlan } from "@/controllers/planController.js";
 import { asyncHandler } from "@/middlewares/asyncHandler.js";
 import { validate } from "@/middlewares/validate.js";
 import { Router } from "express";
@@ -20,6 +20,7 @@ const updatePlanSchema = createPlanSchema.partial().refine(
 
 router.post('/create', validate(createPlanSchema), asyncHandler(createPlan));
 router.patch('/edit/:uuid', validate(updatePlanSchema), asyncHandler(updatePlan));
+router.get('/:uuid', asyncHandler(getPlanDetails));
 
 
 export default router;
