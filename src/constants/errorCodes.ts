@@ -1,0 +1,4 @@
+export enum ERRORS {
+    E409 = "DUPLICATE_PLAN",
+    E500 = "INTERNAL_SERVER_ERROR"
+}
