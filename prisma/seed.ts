@@ -69,6 +69,7 @@ async function main() {
   await seedPlans();
 }
 
+
 main()
   .then(async () => {
     await prisma.$disconnect();

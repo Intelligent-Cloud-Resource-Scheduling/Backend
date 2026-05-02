@@ -7,7 +7,7 @@ export const validate = (schema: any) => (req: Request, res: Response, next: Nex
   const result = schema.safeParse(req.body);
 
   if (!result.success) {
-    const details = result.error.errors.map((e: any) => ({
+    const details = result.error.issues.map((e: any) => ({
       field: e.path.join('.'),
       message: e.message,
     }));
