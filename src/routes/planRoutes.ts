@@ -1,4 +1,4 @@
-import { createPlan } from "@/controllers/planController.js";
+import { createPlan, updatePlan } from "@/controllers/planController.js";
 import { asyncHandler } from "@/middlewares/asyncHandler.js";
 import { validate } from "@/middlewares/validate.js";
 import { Router } from "express";
@@ -13,9 +13,13 @@ const createPlanSchema = z.object({
     max_uploads_per_week: z.number().min(1),
 })
 
-const hideShowPlanSchema = z.boolean();
+const updatePlanSchema = createPlanSchema.partial().refine(
+    (data) => Object.keys(data).length > 0,
+    { message: "At least one field must be provided for update." }
+);
 
-router.post('/create', validate(createPlanSchema), asyncHandler(createPlan))
+router.post('/create', validate(createPlanSchema), asyncHandler(createPlan));
+router.patch('/edit/:uuid', validate(updatePlanSchema), asyncHandler(updatePlan));
 
 
 export default router;
