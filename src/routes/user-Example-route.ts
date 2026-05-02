@@ -19,7 +19,7 @@ router.post(
   '/',
   validate(createUserSchema),
   asyncHandler(async (req, res) => {
-    const user = await prisma.user.create({
+    const user = await prisma.users.create({
       data: req.body,
     });
 
@@ -31,7 +31,7 @@ router.post(
 router.get(
   '/:id',
   asyncHandler(async (req, res, next) => {
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
       where: { id: Number(req.params.id) },
     });
 

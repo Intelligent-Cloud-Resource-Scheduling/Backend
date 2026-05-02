@@ -16,6 +16,7 @@ export const sendError = <T>(res: Response, err: any) : Response<ApiResponse<T>>
     message: err.message || 'Internal Server Error',
     error: {
       code: err.code || 'INTERNAL_ERROR',
+      details: err.details || null
     },
     requestId: res.locals.requestId,
   });
