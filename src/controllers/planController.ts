@@ -60,10 +60,10 @@ export const getPlanDetails = async(req:Request, res:Response) => {
 
 export const updatePlan = async(req: Request, res:Response) => {
     const { uuid } = req.params;
-    const { name, description, price, max_uploads_per_week } = req.body;
+    const { name, description, price, max_uploads_per_week, is_hidden } = req.body;
 
     const updateData = Object.fromEntries(
-        Object.entries({name, description, price, max_uploads_per_week})
+        Object.entries({name, description, price, max_uploads_per_week, is_hidden})
         .filter(([indx, value]) => value != undefined)
     )
 
@@ -108,3 +108,7 @@ export const updatePlan = async(req: Request, res:Response) => {
     return sendSuccess(res, updatedPlan, "Plan updates successfully", 200);
 }
 
+export const getPlans = async(req:Request, res:Response) => {
+    const existingPlan = await prisma.plans.findMany();
+    return sendSuccess(res, existingPlan, "Plans fetched successfully", 200);
+}
