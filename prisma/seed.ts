@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
-async function main() {
+async function seedAdmin() {
   console.log('🌱 Seeding database...');
 
   const adminEmail = 'omar@admin.cloud';
@@ -25,6 +25,50 @@ async function main() {
 
   console.log(`✅ Admin account ensured: ${admin.email}`);
 }
+
+async function seedPlans() {
+  const plansToSeed = [
+    {
+      name: 'Free Plan',
+      description: 'Upload your videos and upscale them easily.',
+      price: 0,
+      max_uploads_per_week: 100,
+    },
+  ];
+
+  for (const planData of plansToSeed) {
+    const existingPlan = await prisma.plans.findFirst({
+      where: { name: planData.name },
+      select: { id: true, uuid: true },
+    });
+
+    if (existingPlan) {
+      const updatedPlan = await prisma.plans.update({
+        where: { id: existingPlan.id },
+        data: {
+          description: planData.description,
+          price: planData.price,
+          max_uploads_per_week: planData.max_uploads_per_week,
+        },
+      });
+
+      console.log(`✅ Plan updated: ${updatedPlan.name} (${updatedPlan.uuid})`);
+    } else {
+      const createdPlan = await prisma.plans.create({
+        data: planData,
+      });
+
+      console.log(`✅ Plan created: ${createdPlan.name} (${createdPlan.uuid})`);
+    }
+  }
+}
+
+async function main() {
+  console.log('🌱 Seeding database...');
+  await seedAdmin();
+  await seedPlans();
+}
+
 
 main()
   .then(async () => {
