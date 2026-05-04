@@ -174,3 +174,33 @@ router.get(
 ```
 
 By adhering to these patterns, the codebase remains clean, predictable, and heavily type-safe! Happy Coding!
+
+---
+
+## VM Management Endpoints
+
+This project includes a VM management set of endpoints mounted under `/vm`.
+
+- **Cost formula used**: cost = cores * 10 + rams * 5 (stored on VM creation as `cost`).
+
+Endpoints:
+
+- `POST /vm/calc/vm-cost` : body `{ cores, rams }` → returns `{ cost }`
+- `POST /vm/create` : body `{ name, cores, rams }` → creates VM and returns `{ uuid }`
+- `DELETE /vm/delete/:uuid` : deletes VM
+- `PATCH /vm/dispatch/:uuid` : set VM `status` to `Dispatched`
+- `PATCH /vm/stop/:uuid` : set VM `status` to `Idle`
+- `GET /vm/current-status/:uuid` : returns current `status`
+- `GET /vm/history/:uuid` : returns VM history entries
+- `POST /vm/history/:uuid` : body `{ batch_uuid?, duration }` → adds history entry; `cost` for entry = `vm.cost * duration`
+- `GET /vm/spentcost/:uuid` : returns total spent aggregated from `vm_history`
+- `GET /vm/:uuid` : returns VM details
+- `GET /vm` : returns all VMs
+- `GET /vm/all/:status` : returns all VMs matching `status`
+
+If you change the `prisma/schema.prisma` related to VMs or VM history, run:
+
+```bash
+npx prisma db push
+npx prisma generate
+```
