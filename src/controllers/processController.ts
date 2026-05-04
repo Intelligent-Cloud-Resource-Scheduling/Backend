@@ -4,6 +4,10 @@ import { sendSuccess } from '../utils/response.js';
 import { AppError } from '@/utils/AppError.js';
 import { ERRORS } from '@/constants/errorCodes.js';
 
+const calculateProcessDurationAlgo = (video_duration: Number, quality: string, fps: Number, size: Number) => {
+  return Math.floor(Math.random() * 1000);
+}
+
 export const calcProcessDuration = async (req: Request, res: Response) => {
   const { video_duration, quality, fps, size } = req.body;
 
@@ -12,9 +16,46 @@ export const calcProcessDuration = async (req: Request, res: Response) => {
   }
 
   return sendSuccess(res, {
-    "processDuration": Math.floor(Math.random() * 1000)
+    "processDuration": calculateProcessDurationAlgo(video_duration, quality, fps, size)
   }, "Video duration calculated")
 }
+
+export const calcProcessDurationWithVid = async (req: Request, res: Response) => {
+  const { videoUuid } = req.params;
+  const { quality, fps } = req.body; // These still come from the body
+
+  if(typeof videoUuid !== 'string') {
+    throw new AppError("Requested id was not correct", 400, ERRORS.E400);
+  }
+  // 1. Fetch the video from the DB
+  const video = await prisma.video_uploads.findUnique({
+    where: { uuid: videoUuid },
+    select: { duration: true, size: true } // Only grab what we need
+  });
+
+  if (!video) {
+    throw new AppError("Video not found", 404, ERRORS.E404);
+  }
+
+  // 2. Validation (quality and fps are still required in the body)
+  if (!quality || !fps) {
+    throw new AppError("Quality and FPS are required in the request body.", 400, ERRORS.E400);
+  }
+
+  if(!video.size || !video.duration) {
+    throw new AppError("Video data was not retrieved", 404, ERRORS.E404)
+  }
+  // 3. Generate the random duration (Your core logic)
+  const processDuration = calculateProcessDurationAlgo(video.duration, quality, fps, Number(video.size))
+
+  return sendSuccess(res, {
+    processDuration,
+    metadata: {
+      video_duration: video.duration,
+      size: Number(video.size)
+    }
+  }, "Video duration calculated from database record");
+};
 
 export const createProcess = async (req: Request, res: Response) => {
   const { videoUuid, userUuid, quality, fps } = req.body;

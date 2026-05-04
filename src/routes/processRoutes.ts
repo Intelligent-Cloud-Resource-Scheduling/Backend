@@ -3,7 +3,15 @@ import { Router } from 'express';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
 import { validate } from '../middlewares/validate.js';
 import { z } from 'zod';
-import { calcProcessDuration, createProcess, deleteProcess, getProcessesByStatus, getProcessHistory, getProcessStatus } from '@/controllers/processController.js';
+import { 
+  calcProcessDuration, 
+  calcProcessDurationWithVid,
+  createProcess, 
+  deleteProcess, 
+  getProcessesByStatus, 
+  getProcessHistory, 
+  getProcessStatus 
+} from '@/controllers/processController.js';
 
 const router = Router();
 
@@ -17,6 +25,7 @@ const createProcessSchema = z.object({
 })
 
 router.post('/calc-duration', asyncHandler(calcProcessDuration));
+router.post('/calc-duration/:videoUuid', asyncHandler(calcProcessDurationWithVid))
 router.post('/create', validate(createProcessSchema), asyncHandler(createProcess));
 router.delete('/:uuid/delete/', asyncHandler(deleteProcess));
 router.get('/:uuid/current-status', asyncHandler(getProcessStatus));
