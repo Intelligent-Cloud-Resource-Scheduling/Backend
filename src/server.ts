@@ -3,6 +3,7 @@ import express, { type Request, type Response } from "express";
 import userRoutes from '@/routes/userRoutes.js'
 import adminRoutes from '@/routes/adminRoutes.js';
 import planRoutes from '@/routes/planRoutes.js';
+import vmRoutes from '@/routes/vm-mangementRouts.js';
 import { errorHandler } from '@/middlewares/error.js';
 import { requestId } from '@/middlewares/requestId.js';
 
@@ -16,6 +17,7 @@ App.use(requestId);
 App.use('/users', userRoutes);
 App.use('/admins', adminRoutes);
 App.use('/plans', planRoutes);
+App.use('/vm', vmRoutes);
 
 App.get("/", (req: Request, res: Response) => {
     res.send(`Server is running, main route.`)
