@@ -5,7 +5,7 @@ import { sendSuccess } from '../utils/response.js';
 import { AppError } from '@/utils/AppError.js';
 import { generateUserToken, verifyToken } from '@/utils/jwt.js';
 import { v4 as uuidv4 } from "uuid";
-import { generateUploadURL } from '@/utils/aws.js';
+import { generateUploadURL, videoDeleter } from '@/utils/aws.js';
 import { ERRORS } from '@/constants/errorCodes.js';
 
 export const initiateVideoUploader = async (req: Request, res: Response) => {
@@ -42,16 +42,16 @@ export const confirmSuccessUpload = async (req: Request, res: Response) => {
     const { video_uuid } = req.params;
 
     const token = verifyToken(req.headers.authorization || "");
-    const useUUID = token.uuid;
+    const userUUID = token.uuid;
 
     if (typeof video_uuid !== 'string') {
-        throw new AppError("Invalid S3 Key format", 400, ERRORS.E400);
+        throw new AppError("Invalid video uuid format", 400, ERRORS.E400);
     }
 
     const video = await prisma.video_uploads.findFirst({
         where: {
-            user_uuid: useUUID,
             uuid: video_uuid,
+            user_uuid: userUUID,
         }
     });
 
@@ -76,4 +76,41 @@ export const confirmSuccessUpload = async (req: Request, res: Response) => {
 }
 
 
+export const deleteVideo = async (req: Request, res: Response) => {
+    const { video_uuid } = req.params;
+    
+    const token = verifyToken(req.headers.authorization || "");
+    const userUUID = token.uuid;
 
+    if(typeof video_uuid !== 'string'){
+        throw new AppError("Invalid video uuid format", 400, ERRORS.E400);
+    }
+
+    const video = await prisma.video_uploads.findFirst({
+        where: {
+            uuid: video_uuid,
+            user_uuid: userUUID,
+        }
+    })
+
+    if (!video) {
+        throw new AppError("Video not found or unauthorized", 404, ERRORS.E404);
+    }
+
+    await videoDeleter(video.s3_key);
+
+    const deleted_video = await prisma.video_uploads.update({
+        where: {
+            uuid: video.uuid
+        },
+        data: {
+            is_deleted: true
+        }
+    })
+
+    if (!deleted_video) {
+        throw new AppError(`Failed to confirm video deleting`, 500, ERRORS.E500);
+    }
+
+    return sendSuccess(res, deleted_video, "Video deleted successfully.");
+}
