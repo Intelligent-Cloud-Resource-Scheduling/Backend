@@ -6,6 +6,7 @@ import planRoutes from '@/routes/planRoutes.js';
 import vidoeRoutes from '@/routes/videoRoutes.js';
 import { errorHandler } from '@/middlewares/error.js';
 import { requestId } from '@/middlewares/requestId.js';
+import cors from "cors";
 
 declare global {
     interface BigInt {
@@ -15,6 +16,11 @@ declare global {
 BigInt.prototype.toJSON = function () { return Number(this) }
 
 const App = express();
+
+App.use(cors({
+  origin: "http://localhost:3000",
+  credentials: true
+}));
 
 
 App.use(express.json());
