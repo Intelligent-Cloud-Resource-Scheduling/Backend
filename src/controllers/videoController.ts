@@ -76,6 +76,21 @@ export const confirmSuccessUpload = async (req: Request, res: Response) => {
 }
 
 
+export const allUserVideos = async (req: Request, res: Response) => {
+    const token = verifyToken(req.headers.authorization || "");
+    const userUUID = token.uuid;
+
+    const videos = await prisma.video_uploads.findMany({
+        where: {
+            user_uuid: userUUID,
+            is_deleted: false
+        }
+    })
+
+    return sendSuccess(res, videos, "Videos list fetched successfully.");
+}
+
+
 export const deleteVideo = async (req: Request, res: Response) => {
     const { video_uuid } = req.params;
     
