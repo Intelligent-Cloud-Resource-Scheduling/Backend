@@ -7,6 +7,13 @@ import vidoeRoutes from '@/routes/videoRoutes.js';
 import { errorHandler } from '@/middlewares/error.js';
 import { requestId } from '@/middlewares/requestId.js';
 
+declare global {
+    interface BigInt {
+        toJSON(): Number;
+    }
+}
+BigInt.prototype.toJSON = function () { return Number(this) }
+
 const App = express();
 
 
