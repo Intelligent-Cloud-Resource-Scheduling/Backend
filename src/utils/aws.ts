@@ -42,13 +42,7 @@ export const videoDeleter = async (key : string) => {
 
     try {
         await s3.send(command);
-        await waitUntilObjectNotExists(
-            {
-                client: s3,
-                maxWaitTime: 200
-            },
-            { Bucket: `${process.env.AWS_S3_BUCKET}`, Key: key}
-        )
+        return true;
     } catch (e) {
         if(e instanceof S3ServiceException && e.name === "NoSuchBucket"){
             throw new AppError(`Error from S3 while deleting object from ${bucketName}. The bucket doesn't exist.`, 500, ERRORS.E500);
