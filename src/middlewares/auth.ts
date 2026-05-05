@@ -12,10 +12,6 @@ export const authUser = async (req: Request, res: Response, next: NextFunction) 
     return next(new AppError('Unauthorized', 401, ERRORS.E401U));
   }
 
-  if(token.startsWith("Bearer")){
-    token = token.split(" ")[1];
-  }
-
   const decoded = verifyToken(token as string);
 
   if (decoded.role != "USER") {

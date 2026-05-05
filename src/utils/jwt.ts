@@ -47,6 +47,10 @@ export const generateAdminToken = (admin: JwtPayload): string => {
 };
 
 export const verifyToken = (token: string): JwtOutput => {
-  const result:JwtOutput = jwt.verify(token, process.env.JWT_SECRET as string) as JwtOutput;
+  let cleaned:string = token;
+  if(token.startsWith("Bearer")){
+    cleaned = (token.split(" ")[1]) as string;
+  }
+  const result:JwtOutput = jwt.verify(cleaned, process.env.JWT_SECRET as string) as JwtOutput;
   return result;
 };
