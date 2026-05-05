@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { validate } from '../middlewares/validate.js';
 import { z } from 'zod';
 import { authUser } from '@/middlewares/auth.js';
-import { initiateVideoUploader } from '@/controllers/videoController.js';
+import { confirmSuccessUpload, initiateVideoUploader } from '@/controllers/videoController.js';
 
 const router = Router();
 
@@ -13,6 +13,7 @@ const videoInitiateSchema = z.object({
 })
 
 router.post('/init-video-uploader', validate(videoInitiateSchema), authUser, initiateVideoUploader);
+router.get('/confirm-upload/:video_uuid', authUser, confirmSuccessUpload);
 
 
 export default router;

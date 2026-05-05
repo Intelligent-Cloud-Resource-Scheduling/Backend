@@ -8,7 +8,7 @@ import { v4 as uuidv4 } from "uuid";
 import { generateUploadURL } from '@/utils/aws.js';
 import { ERRORS } from '@/constants/errorCodes.js';
 
-export const initiateVideoUploader = async(req: Request, res: Response) => {
+export const initiateVideoUploader = async (req: Request, res: Response) => {
     const { name, duration, size } = req.body;
 
     const token = verifyToken(req.headers.authorization || "");
@@ -30,9 +30,50 @@ export const initiateVideoUploader = async(req: Request, res: Response) => {
         }
     });
 
-    if(!video_upload){
+    if (!video_upload) {
         throw new AppError(`Failed to store video`, 500, ERRORS.E500);
     }
 
-    return sendSuccess(res, {uploadURL, videoUUID, s3Key}, 'Private video upload linke is successfully generated.')
+    return sendSuccess(res, { upload_url: uploadURL, video_uuid: videoUUID, s3_key: s3Key }, 'Private video upload linke is successfully generated.')
 }
+
+
+export const confirmSuccessUpload = async (req: Request, res: Response) => {
+    const { video_uuid } = req.params;
+
+    const token = verifyToken(req.headers.authorization || "");
+    const useUUID = token.uuid;
+
+    if (typeof video_uuid !== 'string') {
+        throw new AppError("Invalid S3 Key format", 400, ERRORS.E400);
+    }
+
+    const video = await prisma.video_uploads.findFirst({
+        where: {
+            user_uuid: useUUID,
+            uuid: video_uuid,
+        }
+    });
+
+    if (!video) {
+        throw new AppError("Video not found or unauthorized", 404, ERRORS.E404);
+    }
+
+    const uploaded_video = await prisma.video_uploads.update({
+        where: {
+            uuid: video.uuid,
+        },
+        data: {
+            is_uploaded: true
+        }
+    });
+
+    if (!uploaded_video) {
+        throw new AppError(`Failed to confirm video uploading`, 500, ERRORS.E500);
+    }
+
+    return sendSuccess(res, uploaded_video, "Video upload successfully confirmed.");
+}
+
+
+
