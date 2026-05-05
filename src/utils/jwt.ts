@@ -7,6 +7,15 @@ interface JwtPayload {
   email: string;
 }
 
+interface JwtOutput {
+  id: number;
+  uuid: string;
+  email: string;
+  role: "USER" | "ADMIN",
+  iat: number;
+  exp: number;
+}
+
 export const generateUserToken = (user: JwtPayload): string => {
   const jwtPayload = {
     id: user.id,
@@ -35,4 +44,9 @@ export const generateAdminToken = (admin: JwtPayload): string => {
     process.env.JWT_SECRET as string,
     { expiresIn: '14d' }
   );
+};
+
+export const verifyToken = (token: string): JwtOutput => {
+  const result:JwtOutput = jwt.verify(token, process.env.JWT_SECRET as string) as JwtOutput;
+  return result;
 };
