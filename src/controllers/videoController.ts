@@ -91,6 +91,31 @@ export const allUserVideos = async (req: Request, res: Response) => {
 }
 
 
+export const signleVideo = async (req:Request, res: Response) => {
+    const { video_uuid } = req.params;
+
+    const token = verifyToken(req.headers.authorization || "");
+    const userUUID = token.uuid;
+
+    if (typeof video_uuid !== 'string') {
+        throw new AppError("Invalid video uuid format", 400, ERRORS.E400);
+    }
+
+    const video = await prisma.video_uploads.findFirst({
+        where: {
+            uuid: video_uuid,
+            user_uuid: userUUID,
+        }
+    })
+
+    if (!video) {
+        throw new AppError("Video not found or unauthorized", 404, ERRORS.E404);
+    }
+
+    return sendSuccess(res, video, "Video details fetched successfully.");
+}
+
+
 export const deleteVideo = async (req: Request, res: Response) => {
     const { video_uuid } = req.params;
     
