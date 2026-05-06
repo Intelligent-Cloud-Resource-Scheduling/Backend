@@ -15,41 +15,32 @@ export const calcProcessDuration = async (req: Request, res: Response) => {
   }, "Video duration calculated.")
 }
 
-export const calcProcessDurationWithVid = async (req: Request, res: Response) => {
-  const { videoUuid } = req.params;
-  const { quality, fps } = req.body; // These still come from the body
+export const calcProcessDurationWithVideoUUID = async (req: Request, res: Response) => {
+  const { video_uuid  } = req.params;
+  const { quality, fps } = req.body; 
 
-  if(typeof videoUuid !== 'string') {
-    throw new AppError("Requested id was not correct", 400, ERRORS.E400);
+  if(typeof video_uuid  !== 'string') {
+    throw new AppError("Invalid video uuid format", 400, ERRORS.E400);
   }
-  // 1. Fetch the video from the DB
+
   const video = await prisma.video_uploads.findUnique({
-    where: { uuid: videoUuid },
-    select: { duration: true, size: true } // Only grab what we need
+    where: { uuid: video_uuid  },
+    select: { duration: true, size: true } 
   });
 
   if (!video) {
     throw new AppError("Video not found", 404, ERRORS.E404);
   }
 
-  // 2. Validation (quality and fps are still required in the body)
-  if (!quality || !fps) {
-    throw new AppError("Quality and FPS are required in the request body.", 400, ERRORS.E400);
-  }
-
   if(!video.size || !video.duration) {
     throw new AppError("Video data was not retrieved", 404, ERRORS.E404)
   }
-  // 3. Generate the random duration (Your core logic)
-  const processDuration = calculateProcessDurationAlgo(video.duration, quality, fps, Number(video.size))
+
+  const process_duration = calculateProcessDurationAlgo(video.duration, quality, fps, video.size)
 
   return sendSuccess(res, {
-    processDuration,
-    metadata: {
-      video_duration: video.duration,
-      size: Number(video.size)
-    }
-  }, "Video duration calculated from database record");
+    process_duration,
+  }, "Video duration calculated.");
 };
 
 export const createProcess = async (req: Request, res: Response) => {

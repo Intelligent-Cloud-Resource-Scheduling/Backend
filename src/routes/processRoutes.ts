@@ -5,7 +5,7 @@ import { validate } from '../middlewares/validate.js';
 import { z } from 'zod';
 import { 
   calcProcessDuration, 
-  calcProcessDurationWithVid,
+  calcProcessDurationWithVideoUUID,
   createProcess, 
   deleteProcess, 
   getProcessesByStatus, 
@@ -25,6 +25,13 @@ const calcProcessSchema = z.object({
   size: z.number().min(1)
 })
 
+const calcProcessWithVideoUUIDSchema = z.object({
+  quality: z.enum(VideoQuality),
+  fps: z.number().refine((val) => VideoFPS.includes(val), {
+    message: "FPS must be either 30 or 60",
+  }),
+})
+
 const createProcessSchema = z.object({
   videoUuid: z.uuid(),
   userUuid: z.uuid(),
@@ -35,7 +42,7 @@ const createProcessSchema = z.object({
 })
 
 router.post('/calc-duration', validate(calcProcessSchema), asyncHandler(calcProcessDuration));
-router.post('/calc-duration/:videoUuid', asyncHandler(calcProcessDurationWithVid))
+router.post('/calc-duration/:video_uuid', validate(calcProcessWithVideoUUIDSchema), asyncHandler(calcProcessDurationWithVideoUUID))
 router.post('/create', validate(createProcessSchema), asyncHandler(createProcess));
 router.delete('/:uuid/delete/', asyncHandler(deleteProcess));
 router.get('/:uuid/current-status', asyncHandler(getProcessStatus));
