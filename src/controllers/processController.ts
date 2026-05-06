@@ -3,21 +3,16 @@ import { prisma } from '../config/prisma.js';
 import { sendSuccess } from '../utils/response.js';
 import { AppError } from '@/utils/AppError.js';
 import { ERRORS } from '@/constants/errorCodes.js';
-
-const calculateProcessDurationAlgo = (video_duration: Number, quality: string, fps: Number, size: Number) => {
-  return Math.floor(Math.random() * 1000);
-}
+import { calculateProcessDurationAlgo } from '@/utils/algorithms.js';
 
 export const calcProcessDuration = async (req: Request, res: Response) => {
-  const { video_duration, quality, fps, size } = req.body;
+  const { duration, quality, fps, size } = req.body;
 
-  if (!video_duration || !quality || !fps || !size) {
-    throw new AppError("Fill all required values.", 400, ERRORS.E400);
-  }
+  const process_duration:number = calculateProcessDurationAlgo(duration, quality, fps, size)
 
   return sendSuccess(res, {
-    "processDuration": calculateProcessDurationAlgo(video_duration, quality, fps, size)
-  }, "Video duration calculated")
+    process_duration
+  }, "Video duration calculated.")
 }
 
 export const calcProcessDurationWithVid = async (req: Request, res: Response) => {
