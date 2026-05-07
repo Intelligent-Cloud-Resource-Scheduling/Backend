@@ -65,11 +65,11 @@ model processes {
   uuid            String            @unique @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   user_uuid       String            @db.Uuid
   video_uuid      String            @db.Uuid
-  quality         String?
-  fps             Int?
-  duration        BigInt?
-  cores           Int?
-  memory          Int?
+  quality         String
+  fps             Int
+  duration        BigInt
+  cores           Int
+  memory          Int
   batch_uuid      String?           @db.Uuid
   created_at      DateTime?         @default(now()) @db.Timestamp(6)
   batch_processes batch_processes[]
@@ -102,9 +102,9 @@ model video_uploads {
   uuid          String      @unique @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   user_uuid     String      @db.Uuid
   s3_key        String
-  name          String?
-  size          BigInt?
-  duration      BigInt?
+  name          String
+  size          BigInt
+  duration      BigInt
   is_deleted    Boolean?    @default(false)
   is_uploaded   Boolean?    @default(false)
   created_at    DateTime?   @default(now()) @db.Timestamp(6)
