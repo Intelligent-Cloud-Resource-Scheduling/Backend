@@ -3,15 +3,15 @@ import { prisma } from '../config/prisma.js';
 import { sendSuccess } from '../utils/response.js';
 import { AppError } from '@/utils/AppError.js';
 import { ERRORS } from '@/constants/errorCodes.js';
-import { calculateProcessDurationAlgo } from '@/utils/algorithms.js';
+import { calculateProcessResourceAlgo } from '@/utils/algorithms.js';
 
 export const calcProcessDuration = async (req: Request, res: Response) => {
   const { duration, quality, fps, size } = req.body;
 
-  const process_duration:number = calculateProcessDurationAlgo(duration, quality, fps, size)
+  const resources = calculateProcessResourceAlgo(duration, quality, fps, size)
 
   return sendSuccess(res, {
-    process_duration
+    resources
   }, "Video duration calculated.")
 }
 
@@ -36,18 +36,20 @@ export const calcProcessDurationWithVideoUUID = async (req: Request, res: Respon
     throw new AppError("Video data was not retrieved", 404, ERRORS.E404)
   }
 
-  const process_duration = calculateProcessDurationAlgo(video.duration, quality, fps, video.size)
+  const resources = calculateProcessResourceAlgo(video.duration, quality, fps, video.size)
 
   return sendSuccess(res, {
-    process_duration,
+    resources,
   }, "Video duration calculated.");
 };
 
 export const createProcess = async (req: Request, res: Response) => {
-  const { videoUuid, userUuid, quality, fps } = req.body;
+  const { videoUuid, quality, fps } = req.body;
+
+
 
   // 1. Validation
-  if (!videoUuid || !userUuid || !quality || !fps) {
+  if (!videoUuid || !quality || !fps) {
     throw new AppError("Fill all required values.", 400, ERRORS.E400);
   }
 

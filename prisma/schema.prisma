@@ -67,7 +67,9 @@ model processes {
   video_uuid      String            @db.Uuid
   quality         String?
   fps             Int?
-  duration        Float?
+  duration        BigInt?
+  cores           Int?
+  memory          Int?
   batch_uuid      String?           @db.Uuid
   created_at      DateTime?         @default(now()) @db.Timestamp(6)
   batch_processes batch_processes[]
