@@ -34,7 +34,7 @@ const calcProcessWithVideoUUIDSchema = z.object({
 })
 
 const createProcessSchema = z.object({
-  videoUuid: z.uuid(),
+  video_uuid: z.uuid(),
   quality: z.enum(VideoQuality),
   fps: z.number().refine((val) => VideoFPS.includes(val), {
     message: "FPS must be either 30 or 60",
