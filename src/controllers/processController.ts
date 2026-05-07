@@ -41,13 +41,11 @@ export const calcProcessDurationWithVideoUUID = async (req: Request, res: Respon
   }, "Video duration calculated.");
 };
 
-
 export const createProcess = async (req: Request, res: Response) => {
   const { video_uuid, quality, fps } = req.body;
 
   const token = verifyToken(req.headers.authorization || "");
   const userUUID = token.uuid;
-
 
   const video = await prisma.video_uploads.findFirst({
     where: {
@@ -90,40 +88,54 @@ export const createProcess = async (req: Request, res: Response) => {
   return sendSuccess(res, newProcess, 'Process created successfully.');
 };
 
-export const deleteProcess = async (req: Request, res: Response) => {
-  const { uuid } = req.params;
+export const deleteProcess = async (req: Request, res: Response) => { // Must Deal with Queue
+  const { process_uuid } = req.params;
 
-  if (typeof uuid !== 'string') {
+  const token = verifyToken(req.headers.authorization || "");
+  const userUUID = token.uuid;
+
+  if (typeof process_uuid !== 'string') {
     throw new AppError("The uuid format is not correct", 400, ERRORS.E400)
   }
 
-  await prisma.$transaction(async (tx) => {
+  const process = await prisma.processes.findUnique({
+    where: {
+        uuid: process_uuid,
+        user_uuid: userUUID,
+    },
+  })
+
+  if (!process) {
+      throw new AppError("Process not found or unauthorized", 404, ERRORS.E404);
+  }
+
+  await prisma.$transaction(async (trans) => {
     // 1. Delete all related history first 
-    await tx.process_history.deleteMany({
-      where: { process_uuid: uuid }
+    await trans.process_history.deleteMany({
+      where: { process_uuid }
     });
 
     // 2. Delete the process itself
-    const deletedProcess = await tx.processes.delete({
-      where: { uuid }
+    const deletedProcess = await trans.processes.delete({
+      where: { uuid: process_uuid }
     });
 
     return deletedProcess;
   });
 
-  return sendSuccess(res, null, 'Process and history deleted successfully');
+  return sendSuccess(res, null, 'Process and history deleted successfully.');
 }
 
 export const getProcessStatus = async (req: Request, res: Response) => {
-  const { uuid } = req.params;
+  const { process_uuid } = req.params;
 
-  if (typeof uuid !== 'string') {
+  if (typeof process_uuid !== 'string') {
     throw new AppError("The uuid format is not correct", 400, ERRORS.E400)
   }
 
   // 1. Fetch the process and its LATEST history entry
   const processWithStatus = await prisma.processes.findUnique({
-    where: { uuid: uuid },
+    where: { uuid: process_uuid },
     include: {
       process_history: {
         orderBy: {
@@ -151,37 +163,33 @@ export const getProcessStatus = async (req: Request, res: Response) => {
 };
 
 export const getProcessHistory = async (req: Request, res: Response) => {
-  const { uuid } = req.params;
+  const { process_uuid } = req.params;
 
   // type narrowing
-  if (typeof uuid !== 'string') {
+  if (typeof process_uuid !== 'string') {
     throw new AppError("The uuid format is not correct", 400, ERRORS.E400)
   }
 
   // Query the history table directly using the process_uuid foreign key
   const history = await prisma.process_history.findMany({
     where: {
-      process_uuid: uuid
+      process_uuid: process_uuid
     },
     orderBy: {
-      changed_at: 'asc' // Chronological order
+      changed_at: 'desc' // Chronological order
     }
   });
 
-  // Basic check: if the array is empty, the process might not exist (or has no history)
-  if (history.length === 0) {
-    throw new AppError("No history found for this process", 404, ERRORS.E404);
-  }
-
-  return sendSuccess(res, history, 'Full process history retrieved (oldest to newest)');
+  return sendSuccess(res, history, 'Full process history retrieved (newest to oldest)');
 };
 
 export const getProcessesByStatus = async (req: Request, res: Response) => {
   const { status } = req.params;
 
   if (typeof status !== 'string') {
-    return
+    throw new AppError("The status format is not correct", 400, ERRORS.E400)
   }
+
   // 1. Get the IDs of processes that have this status as their LATEST entry
   const processes = await prisma.processes.findMany({
     where: {
@@ -206,5 +214,33 @@ export const getProcessesByStatus = async (req: Request, res: Response) => {
   // but the 'latest' record is actually something else
   const result = processes.filter(p => p.process_history[0]?.status === status);
 
-  return sendSuccess(res, result, 'Processes fetched successfully');
+  return sendSuccess(res, result, `Processes of status: ${status} fetched successfully`);
 };
+
+export const getUserAllProcesses = async (req: Request, res: Response) => {
+
+  const token = verifyToken(req.headers.authorization || "");
+  const userUUID = token.uuid;
+
+  const user_processes = await prisma.processes.findMany({
+    where: {
+      user_uuid: userUUID,
+    },
+    include: {
+      process_history: {
+        orderBy: {
+          changed_at: 'desc'
+        },
+        take: 1
+      }
+    }
+  });
+
+  const result = user_processes.map((ele:any)=>{
+    const item = {...ele, status: ele.process_history[0].status}
+    delete item["process_history"]
+    return item
+  })
+
+  return sendSuccess(res, result, 'All user processes retrieved (newest to oldest)');
+}

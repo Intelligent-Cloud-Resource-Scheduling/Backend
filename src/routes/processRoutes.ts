@@ -10,7 +10,8 @@ import {
   deleteProcess, 
   getProcessesByStatus, 
   getProcessHistory, 
-  getProcessStatus 
+  getProcessStatus, 
+  getUserAllProcesses
 } from '@/controllers/processController.js';
 import { VideoFPS, VideoQuality } from '@/types/general.js';
 import { authUser } from '@/middlewares/auth.js';
@@ -44,10 +45,11 @@ const createProcessSchema = z.object({
 router.post('/calc-duration', validate(calcProcessSchema), asyncHandler(calcProcessDuration));
 router.post('/calc-duration/:video_uuid', validate(calcProcessWithVideoUUIDSchema), asyncHandler(calcProcessDurationWithVideoUUID))
 router.post('/create', validate(createProcessSchema), authUser, asyncHandler(createProcess));
-router.delete('/:uuid/delete/', asyncHandler(deleteProcess));
-router.get('/:uuid/current-status', asyncHandler(getProcessStatus));
-router.get('/:uuid/history/', asyncHandler(getProcessHistory));
+router.delete('/confirm-delete/:process_uuid', authUser, asyncHandler(deleteProcess));
+router.get('/current-status/:process_uuid', asyncHandler(getProcessStatus));
+router.get('/history/:process_uuid', asyncHandler(getProcessHistory));
 router.get('/all/:status', asyncHandler(getProcessesByStatus));
+router.get('/', asyncHandler(getUserAllProcesses));
 
 
 export default router;
