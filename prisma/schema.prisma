@@ -99,12 +99,11 @@ model video_uploads {
   id            Int         @id @default(autoincrement())
   uuid          String      @unique @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   user_uuid     String      @db.Uuid
-  s3_key        String
+  s3_video_uuid String
   name          String?
   size          BigInt?
-  duration      BigInt?
+  duration      Float?
   is_deleted    Boolean?    @default(false)
-  is_uploaded   Boolean?    @default(false)
   created_at    DateTime?   @default(now()) @db.Timestamp(6)
   processes     processes[]
   users         users       @relation(fields: [user_uuid], references: [uuid], onDelete: Cascade, onUpdate: NoAction, map: "fk_video_user")
