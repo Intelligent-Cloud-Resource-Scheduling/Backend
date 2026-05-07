@@ -4,6 +4,8 @@ import { sendSuccess } from '../utils/response.js';
 import { AppError } from '@/utils/AppError.js';
 import { ERRORS } from '@/constants/errorCodes.js';
 import { calculateProcessResourceAlgo } from '@/utils/algorithms.js';
+import { verifyToken } from '@/utils/jwt.js';
+import { PROCESS_STATE } from '@/constants/status.js';
 
 export const calcProcessDuration = async (req: Request, res: Response) => {
   const { duration, quality, fps, size } = req.body;
@@ -32,51 +34,60 @@ export const calcProcessDurationWithVideoUUID = async (req: Request, res: Respon
     throw new AppError("Video not found", 404, ERRORS.E404);
   }
 
-  if(!video.size || !video.duration) {
-    throw new AppError("Video data was not retrieved", 404, ERRORS.E404)
-  }
-
-  const resources = calculateProcessResourceAlgo(video.duration, quality, fps, video.size)
+  const resources = calculateProcessResourceAlgo(video.duration!, quality, fps, video.size!);
 
   return sendSuccess(res, {
     resources,
   }, "Video duration calculated.");
 };
 
+
 export const createProcess = async (req: Request, res: Response) => {
-  const { videoUuid, quality, fps } = req.body;
+  const { video_uuid, quality, fps } = req.body;
+
+  const token = verifyToken(req.headers.authorization || "");
+  const userUUID = token.uuid;
 
 
+  const video = await prisma.video_uploads.findFirst({
+    where: {
+        uuid: video_uuid,
+        user_uuid: userUUID,
+    },
+    select: { duration: true, size: true } 
+  })
 
-  // 1. Validation
-  if (!videoUuid || !quality || !fps) {
-    throw new AppError("Fill all required values.", 400, ERRORS.E400);
+  if (!video) {
+      throw new AppError("Video not found or unauthorized", 404, ERRORS.E404);
   }
 
-  // 2. Transaction to create Process and its History
-  const newProcess = await prisma.$transaction(async (tx) => {
-    // Create the process record using the foreign keys directly
-    const process = await tx.processes.create({
+  const resources = calculateProcessResourceAlgo(video.duration!, quality, fps, video.size!)
+
+  const newProcess = await prisma.$transaction(async (tans) => {
+    const process = await tans.processes.create({
       data: {
-        user_uuid: userUuid,
-        video_uuid: videoUuid,
+        user_uuid: userUUID,
+        video_uuid: video_uuid,
         quality,
         fps: Number(fps),  
+        cores: resources.process_cores,
+        memory: resources.process_memory,
+        duration: Number(resources.process_duration),
       },
     });
 
     // Create the initial history entry
-    await tx.process_history.create({
+    const process_history = await tans.process_history.create({
       data: {
         process_uuid: process.uuid,
-        status: "PENDING",
+        status: PROCESS_STATE.PENDING,
       },
     });
 
-    return process;
+    return {process, process_history};
   });
 
-  return sendSuccess(res, newProcess, 'Process created successfully');
+  return sendSuccess(res, newProcess, 'Process created successfully.');
 };
 
 export const deleteProcess = async (req: Request, res: Response) => {
