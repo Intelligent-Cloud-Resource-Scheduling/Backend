@@ -115,14 +115,14 @@ model video_uploads {
 }
 
 model vm_history {
-  id         Int       @id @default(autoincrement())
-  vm_uuid    String    @db.Uuid
-  batch_uuid String?   @db.Uuid
-  duration   Float?
-  cost       Float?
-  created_at DateTime? @default(now()) @db.Timestamp(6)
-  batches    batches?  @relation(fields: [batch_uuid], references: [uuid], onUpdate: NoAction, map: "fk_vm_history_batch")
-  vms        vms       @relation(fields: [vm_uuid], references: [uuid], onDelete: Cascade, onUpdate: NoAction, map: "fk_vm_history_vm")
+  id            Int       @id @default(autoincrement())
+  vm_uuid       String    @db.Uuid
+  batch_uuid    String   @db.Uuid
+  run_duration  BigInt
+  run_cost      Float?
+  created_at    DateTime? @default(now()) @db.Timestamp(6)
+  batches       batches?  @relation(fields: [batch_uuid], references: [uuid], onUpdate: NoAction, map: "fk_vm_history_batch")
+  vms           vms       @relation(fields: [vm_uuid], references: [uuid], onDelete: Cascade, onUpdate: NoAction, map: "fk_vm_history_vm")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
