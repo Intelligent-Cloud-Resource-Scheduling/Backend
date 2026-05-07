@@ -7,8 +7,21 @@ import processRoutes from '@/routes/processRoutes.js';
 import vidoeRoutes from '@/routes/videoRoutes.js';
 import { errorHandler } from '@/middlewares/error.js';
 import { requestId } from '@/middlewares/requestId.js';
+import cors from "cors";
+
+declare global {
+    interface BigInt {
+        toJSON(): Number;
+    }
+}
+BigInt.prototype.toJSON = function () { return Number(this) }
 
 const App = express();
+
+App.use(cors({
+  origin: "*",
+  credentials: true
+}));
 
 
 App.use(express.json());
