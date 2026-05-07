@@ -3,6 +3,7 @@ import express, { type Request, type Response } from "express";
 import userRoutes from '@/routes/userRoutes.js'
 import adminRoutes from '@/routes/adminRoutes.js';
 import planRoutes from '@/routes/planRoutes.js';
+import processRoutes from '@/routes/processRoutes.js';
 import vidoeRoutes from '@/routes/videoRoutes.js';
 import { errorHandler } from '@/middlewares/error.js';
 import { requestId } from '@/middlewares/requestId.js';
@@ -30,6 +31,7 @@ App.use(requestId);
 App.use('/users', userRoutes);
 App.use('/admins', adminRoutes);
 App.use('/plans', planRoutes);
+App.use('/processes', processRoutes);
 App.use('/videos', vidoeRoutes);
 
 App.get("/", (req: Request, res: Response) => {
