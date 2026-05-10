@@ -65,9 +65,11 @@ model processes {
   uuid            String            @unique @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   user_uuid       String            @db.Uuid
   video_uuid      String            @db.Uuid
-  quality         String?
-  fps             Int?
-  duration        Float?
+  quality         String
+  fps             Int
+  duration        BigInt
+  cores           Int
+  memory          Int
   batch_uuid      String?           @db.Uuid
   created_at      DateTime?         @default(now()) @db.Timestamp(6)
   batch_processes batch_processes[]
@@ -99,11 +101,12 @@ model video_uploads {
   id            Int         @id @default(autoincrement())
   uuid          String      @unique @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   user_uuid     String      @db.Uuid
-  s3_video_uuid String
-  name          String?
-  size          BigInt?
-  duration      Float?
+  s3_key        String
+  name          String
+  size          BigInt
+  duration      BigInt
   is_deleted    Boolean?    @default(false)
+  is_uploaded   Boolean?    @default(false)
   created_at    DateTime?   @default(now()) @db.Timestamp(6)
   processes     processes[]
   users         users       @relation(fields: [user_uuid], references: [uuid], onDelete: Cascade, onUpdate: NoAction, map: "fk_video_user")
@@ -112,14 +115,14 @@ model video_uploads {
 }
 
 model vm_history {
-  id         Int       @id @default(autoincrement())
-  vm_uuid    String    @db.Uuid
-  batch_uuid String?   @db.Uuid
-  duration   Float?
-  cost       Float?
-  created_at DateTime? @default(now()) @db.Timestamp(6)
-  batches    batches?  @relation(fields: [batch_uuid], references: [uuid], onUpdate: NoAction, map: "fk_vm_history_batch")
-  vms        vms       @relation(fields: [vm_uuid], references: [uuid], onDelete: Cascade, onUpdate: NoAction, map: "fk_vm_history_vm")
+  id            Int       @id @default(autoincrement())
+  vm_uuid       String    @db.Uuid
+  batch_uuid    String   @db.Uuid
+  run_duration  BigInt
+  run_cost      Float?
+  created_at    DateTime? @default(now()) @db.Timestamp(6)
+  batches       batches?  @relation(fields: [batch_uuid], references: [uuid], onUpdate: NoAction, map: "fk_vm_history_batch")
+  vms           vms       @relation(fields: [vm_uuid], references: [uuid], onDelete: Cascade, onUpdate: NoAction, map: "fk_vm_history_vm")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.

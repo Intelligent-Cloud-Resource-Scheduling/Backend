@@ -1,0 +1,7 @@
+export enum PROCESS_STATE {
+    "PENDING" = "PENDING",
+    "QUEUED" = "QUEUED",
+    "RUNNING" = "RUNNING",
+    "FINISHED" = "FINISHED",
+    "INTERRUPTED" = "INTERRUPTED"
+}

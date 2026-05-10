@@ -4,6 +4,7 @@ import { prisma } from '../config/prisma.js';
 import { sendSuccess } from '../utils/response.js';
 import { AppError } from '@/utils/AppError.js';
 import { generateUserToken } from '@/utils/jwt.js';
+import { ERRORS } from '@/constants/errorCodes.js';
 
 export const registerUser = async (req: Request, res: Response) => {
   const { email, name, password } = req.body;
@@ -38,12 +39,12 @@ export const loginUser = async (req: Request, res: Response) => {
   })
 
   if(!user) {
-    throw new AppError("Invalid credentials", 400, "INVALID_CREDENTIALS");
+    throw new AppError("Invalid credentials", 401, ERRORS.E401);
   }
   
   const passwordsMatch = await bcrypt.compare(password, user.password);
   if(!passwordsMatch) {
-    throw new AppError("Invalid credentials", 400, "INVALID_CREDENTIALS");
+    throw new AppError("Invalid credentials", 401, ERRORS.E401);
   }
 
   const token = generateUserToken(user)
