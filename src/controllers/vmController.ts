@@ -57,6 +57,8 @@ export const stopVm = async (req: Request, res: Response) => {
 
   if (typeof vm_uuid !== 'string') throw new AppError('Invalid UUID', 400, ERRORS.E400);
 
+  // Must send termination signal to GA
+
   await prisma.$transaction(async (tx) => {
       // Set VM idle
       await tx.vms.update({
@@ -123,61 +125,62 @@ export const stopVm = async (req: Request, res: Response) => {
 
 
 export const getCurrentStatus = async (req: Request, res: Response) => {
-  const { uuid } = req.params;
+  const { vm_uuid } = req.params;
 
-  if (typeof uuid !== 'string') throw new AppError('Invalid UUID', 400, ERRORS.E400);
+  if (typeof vm_uuid !== 'string') throw new AppError('Invalid UUID', 400, ERRORS.E400);
 
-  const vm = await prisma.vms.findUnique({ where: { uuid } });
+  const vm = await prisma.vms.findUnique({ where: { uuid:vm_uuid } });
   if (!vm) throw new AppError('VM not found', 404, ERRORS.E404);
 
-  return sendSuccess(res, { status: vm.status }, 'VM status fetched', 200);
+  return sendSuccess(res, { status: vm.status }, 'VM status fetched');
 };
+
 
 export const getHistory = async (req: Request, res: Response) => {
-  const { uuid } = req.params;
+  const { vm_uuid } = req.params;
 
-  if (typeof uuid !== 'string') throw new AppError('Invalid UUID', 400, ERRORS.E400);
+  if (typeof vm_uuid !== 'string') throw new AppError('Invalid UUID', 400, ERRORS.E400);
 
-  const history = await prisma.vm_history.findMany({ where: { vm_uuid: uuid }, orderBy: { created_at: 'desc' } });
+  const history = await prisma.vm_history.findMany({ where: { vm_uuid: vm_uuid }, orderBy: { created_at: 'desc' } });
 
-  return sendSuccess(res, history, 'VM history fetched', 200);
+  return sendSuccess(res, history, 'VM history fetched');
 };
 
+
 export const addHistory = async (req: Request, res: Response) => {
-  const { uuid } = req.params;
-  const { batch_uuid, duration } = req.body as { batch_uuid?: string; duration: number };
+  const { vm_uuid } = req.params;
+  const { batch_uuid, duration, total_cost } = req.body as { batch_uuid: string; duration: number; total_cost: number };
 
-  if (typeof uuid !== 'string' || typeof duration !== 'number') throw new AppError('Invalid input', 400, ERRORS.E400);
+  if (typeof vm_uuid !== 'string' || typeof duration !== 'number') throw new AppError('Invalid input', 400, ERRORS.E400);
 
-  const vm = await prisma.vms.findUnique({ where: { uuid } });
+  const vm = await prisma.vms.findUnique({ where: { uuid: vm_uuid } });
   if (!vm) throw new AppError('VM not found', 404, ERRORS.E404);
-
-  // vm.cost is treated as cost-per-unit (e.g., per hour)
-  const cost = (vm.cost ?? 0) * duration;
 
   const entry = await prisma.vm_history.create({
     data: {
-      vm_uuid: uuid,
-      batch_uuid: batch_uuid ?? undefined,
-      duration,
-      cost,
+      vm_uuid: vm_uuid,
+      batch_uuid: batch_uuid,
+      run_duration: BigInt(duration),
+      run_cost: total_cost,
     },
   });
 
-  return sendSuccess(res, entry, 'VM history entry added', 201);
+  return sendSuccess(res, entry, 'VM history entry added');
 };
+
 
 export const getSpentCost = async (req: Request, res: Response) => {
   const { uuid } = req.params;
 
   if (typeof uuid !== 'string') throw new AppError('Invalid UUID', 400, ERRORS.E400);
 
-  const agg = await prisma.vm_history.aggregate({ where: { vm_uuid: uuid }, _sum: { cost: true } });
+  const agg = await prisma.vm_history.aggregate({ where: { vm_uuid: uuid }, _sum: { run_cost: true } });
 
-  const spent = agg._sum.cost ?? 0;
+  const spent = agg._sum.run_cost;
 
-  return sendSuccess(res, { spent }, 'VM total spent fetched', 200);
+  return sendSuccess(res, { spent }, 'VM total spent fetched');
 };
+
 
 export const getVmDetails = async (req: Request, res: Response) => {
   const { uuid } = req.params;
@@ -187,18 +190,20 @@ export const getVmDetails = async (req: Request, res: Response) => {
   const vm = await prisma.vms.findUnique({ where: { uuid } });
   if (!vm) throw new AppError('VM not found', 404, ERRORS.E404);
 
-  return sendSuccess(res, vm, 'VM fetched', 200);
+  return sendSuccess(res, vm, 'VM fetched');
 };
+
 
 export const getAllVms = async (req: Request, res: Response) => {
   const vms = await prisma.vms.findMany();
-  return sendSuccess(res, vms, 'VMs fetched', 200);
+  return sendSuccess(res, vms, 'VMs fetched');
 };
+
 
 export const getAllByStatus = async (req: Request, res: Response) => {
   const { status } = req.params;
   if (typeof status !== 'string') throw new AppError('Invalid status', 400, ERRORS.E400);
 
   const vms = await prisma.vms.findMany({ where: { status } });
-  return sendSuccess(res, vms, 'VMs by status fetched', 200);
+  return sendSuccess(res, vms, 'VMs by status fetched');
 };

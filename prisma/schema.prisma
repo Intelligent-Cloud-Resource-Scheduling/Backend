@@ -119,7 +119,7 @@ model vm_history {
   vm_uuid       String    @db.Uuid
   batch_uuid    String   @db.Uuid
   run_duration  BigInt
-  run_cost      Float?
+  run_cost      Float
   created_at    DateTime? @default(now()) @db.Timestamp(6)
   batches       batches?  @relation(fields: [batch_uuid], references: [uuid], onUpdate: NoAction, map: "fk_vm_history_batch")
   vms           vms       @relation(fields: [vm_uuid], references: [uuid], onDelete: Cascade, onUpdate: NoAction, map: "fk_vm_history_vm")

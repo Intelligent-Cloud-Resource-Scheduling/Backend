@@ -6,7 +6,6 @@ import {
   calcVmCost,
   createVm,
   deleteVm,
-  dispatchVm,
   stopVm,
   getCurrentStatus,
   getHistory,
