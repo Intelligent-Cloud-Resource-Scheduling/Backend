@@ -275,7 +275,7 @@ export const updateProcessStatus = async (req: Request, res: Response) => {
     }
   });
 
-  // 👇 This pushes the update to the React frontend instantly
+  // This pushes the update to the React frontend instantly
   broadcastStatusUpdate(process_uuid, status);
 
   return sendSuccess(res, { process_uuid, status }, 'Process status updated.');
