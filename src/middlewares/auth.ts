@@ -29,3 +29,29 @@ export const authUser = async (req: Request, res: Response, next: NextFunction) 
 
   next();
 };
+
+
+export const adminUser = async (req: Request, res: Response, next: NextFunction) => { // How to use?
+  let token = req.headers.authorization;
+
+  if (!token) {
+    return next(new AppError('Unauthorized', 401, ERRORS.E401U));
+  }
+
+  const decoded = verifyToken(token as string);
+
+  if (decoded.role != "ADMIN") {
+    return next(new AppError('Unauthorized', 401, ERRORS.E401U));
+  }
+
+  const user = await prisma.admins.findUnique({
+    where: {uuid: decoded.uuid}
+  })
+
+  if(!user) {
+    throw new AppError("Invalid credentials", 401, ERRORS.E401);
+  }
+
+
+  next();
+};

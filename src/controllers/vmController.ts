@@ -30,7 +30,7 @@ export const createVm = async (req: Request, res: Response) => {
 
   if (!vm) throw new AppError('Failed to create VM', 500, ERRORS.E500);
 
-  return sendSuccess(res, { uuid: vm.uuid }, 'VM created', 201);
+  return sendSuccess(res, vm, 'VM created', 201);
 };
 
 
@@ -61,10 +61,14 @@ export const stopVm = async (req: Request, res: Response) => {
 
   await prisma.$transaction(async (tx) => {
       // Set VM idle
-      await tx.vms.update({
+      const updatedVm = await tx.vms.updateMany({
           where: { uuid: vm_uuid },
           data: { status: 'IDLE' }
       });
+
+      if (updatedVm.count === 0) {
+        throw new AppError('VM not found', 404, ERRORS.E404);
+      }
 
       // Get affected batches first
       const batches = await tx.batches.findMany({
@@ -78,6 +82,10 @@ export const stopVm = async (req: Request, res: Response) => {
       });
 
       const batchUUIDs = batches.map(b => b.uuid);
+
+      if (batchUUIDs.length === 0) {
+        return
+      }
 
       // Terminate batches
       await tx.batches.updateMany({
@@ -120,7 +128,7 @@ export const stopVm = async (req: Request, res: Response) => {
 
   });
 
-  return sendSuccess(res, 'VM terminated with all its batches and uncompleted processes are back to the queue');
+  return sendSuccess(res, null, 'VM terminated with all its batches and uncompleted processes are back to the queue');
 };
 
 

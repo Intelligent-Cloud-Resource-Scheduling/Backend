@@ -15,6 +15,7 @@ import {
   getAllVms,
   getAllByStatus,
 } from '@/controllers/vmController.js';
+import { adminUser } from '@/middlewares/auth.js';
 
 const router = Router();
 
@@ -36,13 +37,13 @@ const addHistorySchema = z.object({
 });
 
 router.post('/calc/vm-cost', validate(calcSchema), asyncHandler(calcVmCost));
-router.post('/create', validate(createVmSchema), asyncHandler(createVm));
-router.delete('/confirm-delete/:vm_uuid', asyncHandler(deleteVm));
-router.patch('/stop/:vm_uuid', asyncHandler(stopVm));
+router.post('/create', validate(createVmSchema), adminUser, asyncHandler(createVm));
+router.delete('/confirm-delete/:vm_uuid', adminUser, asyncHandler(deleteVm));
+router.patch('/stop/:vm_uuid', adminUser, asyncHandler(stopVm));
 router.get('/current-status/:vm_uuid', asyncHandler(getCurrentStatus));
 router.get('/history/:vm_uuid', asyncHandler(getHistory));
-router.post('/history/:vm_uuid', validate(addHistorySchema), asyncHandler(addHistory));
-router.get('/spentcost/:vm_uuid', asyncHandler(getSpentCost));
+router.post('/add-history/:vm_uuid', validate(addHistorySchema), adminUser, asyncHandler(addHistory));
+router.get('/spentcost/:vm_uuid', adminUser, asyncHandler(getSpentCost));
 router.get('/:vm_uuid', asyncHandler(getVmDetails));
 router.get('/', asyncHandler(getAllVms));
 router.get('/all/:status', asyncHandler(getAllByStatus));
