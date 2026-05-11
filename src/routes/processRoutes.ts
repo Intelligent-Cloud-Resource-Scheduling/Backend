@@ -11,7 +11,8 @@ import {
   getProcessesByStatus, 
   getProcessHistory, 
   getProcessStatus, 
-  getUserAllProcesses
+  getUserAllProcesses,
+  updateProcessStatus 
 } from '@/controllers/processController.js';
 import { VideoFPS, VideoQuality } from '@/types/general.js';
 import { authUser } from '@/middlewares/auth.js';
@@ -50,6 +51,7 @@ router.get('/current-status/:process_uuid', asyncHandler(getProcessStatus));
 router.get('/history/:process_uuid', asyncHandler(getProcessHistory));
 router.get('/all/:status', asyncHandler(getProcessesByStatus));
 router.get('/', asyncHandler(getUserAllProcesses));
+router.patch('/update-status/:process_uuid', asyncHandler(updateProcessStatus));
 
 
 export default router;
