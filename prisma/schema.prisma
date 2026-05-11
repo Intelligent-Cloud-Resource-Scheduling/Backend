@@ -131,9 +131,9 @@ model vms {
   uuid       String       @unique @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   name       String
   cores      Int
-  rams       Int
-  cost       Float
-  status     String?      @default("Idle")
+  memory     Int
+  cost       Int
+  status     String?      @default("IDLE")
   created_at DateTime?    @default(now()) @db.Timestamp(6)
   batches    batches[]
   vm_history vm_history[]

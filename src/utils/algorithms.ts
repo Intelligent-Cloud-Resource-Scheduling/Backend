@@ -7,3 +7,7 @@ export const calculateProcessResourceAlgo = (duration: BigInt, quality: string, 
     process_memory: Math.floor(Math.random() * 1000)
   };
 }
+
+export const calculateVMCostAlgo = (cores: Number, ram: Number) : Number => {
+  return Math.floor(Math.random() * 1000)
+}

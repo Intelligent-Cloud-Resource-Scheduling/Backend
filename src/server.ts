@@ -3,7 +3,7 @@ import express, { type Request, type Response } from "express";
 import userRoutes from '@/routes/userRoutes.js'
 import adminRoutes from '@/routes/adminRoutes.js';
 import planRoutes from '@/routes/planRoutes.js';
-import vmRoutes from '@/routes/vm-mangementRouts.js';
+import vmRoutes from '@/routes/vmRouts.js';
 import processRoutes from '@/routes/processRoutes.js';
 import vidoeRoutes from '@/routes/videoRoutes.js';
 import { errorHandler } from '@/middlewares/error.js';

@@ -3,37 +3,27 @@ import { prisma } from '@/config/prisma.js';
 import { sendSuccess } from '@/utils/response.js';
 import { AppError } from '@/utils/AppError.js';
 import { ERRORS } from '@/constants/errorCodes.js';
+import { calculateVMCostAlgo } from '@/utils/algorithms.js';
 
-// Pricing formula used across endpoints: cost = cores * 10 + rams * 5
-const COST_PER_CORE = 10;
-const COST_PER_RAM = 5;
 
 export const calcVmCost = async (req: Request, res: Response) => {
-  const { cores, rams } = req.body as { cores: number; rams: number };
+  const { cores, memory } = req.body as { cores: number; memory: number };
 
-  if (typeof cores !== 'number' || typeof rams !== 'number') {
-    throw new AppError('Invalid input', 400, ERRORS.E400);
-  }
+  const cost = calculateVMCostAlgo(cores, memory);
 
-  const cost = cores * COST_PER_CORE + rams * COST_PER_RAM;
-
-  return sendSuccess(res, { cost }, 'Cost calculated', 200);
+  return sendSuccess(res, { cost }, 'Cost calculated');
 };
 
 export const createVm = async (req: Request, res: Response) => {
-  const { name, cores, rams } = req.body as { name: string; cores: number; rams: number };
+  const { name, cores, memory } = req.body as { name: string; cores: number; memory: number };
 
-  if (!name || typeof cores !== 'number' || typeof rams !== 'number') {
-    throw new AppError('Invalid input', 400, ERRORS.E400);
-  }
-
-  const cost = cores * COST_PER_CORE + rams * COST_PER_RAM;
+  const cost = calculateVMCostAlgo(cores, memory);
 
   const vm = await prisma.vms.create({
     data: {
       name,
       cores,
-      rams,
+      memory,
       cost,
     },
   });
@@ -43,6 +33,7 @@ export const createVm = async (req: Request, res: Response) => {
   return sendSuccess(res, { uuid: vm.uuid }, 'VM created', 201);
 };
 
+
 export const deleteVm = async (req: Request, res: Response) => {
   const { uuid } = req.params;
 
@@ -51,30 +42,85 @@ export const deleteVm = async (req: Request, res: Response) => {
   const existing = await prisma.vms.findUnique({ where: { uuid } });
   if (!existing) throw new AppError('VM not found', 404, ERRORS.E404);
 
-  await prisma.vms.delete({ where: { uuid } });
+  if(existing.status === "IDLE"){
+    await prisma.vms.delete({ where: { uuid } });
+  } else {
+    throw new AppError('VM can be removed only if it is in IDLE state.', 409, ERRORS.E409VM);
+  }
 
   return sendSuccess(res, null, 'VM deleted', 200);
 };
 
-export const dispatchVm = async (req: Request, res: Response) => {
-  const { uuid } = req.params;
-
-  if (typeof uuid !== 'string') throw new AppError('Invalid UUID', 400, ERRORS.E400);
-
-  const vm = await prisma.vms.update({ where: { uuid }, data: { status: 'Dispatched' } });
-
-  return sendSuccess(res, vm, 'VM dispatched', 200);
-};
 
 export const stopVm = async (req: Request, res: Response) => {
-  const { uuid } = req.params;
+  const { vm_uuid } = req.params;
 
-  if (typeof uuid !== 'string') throw new AppError('Invalid UUID', 400, ERRORS.E400);
+  if (typeof vm_uuid !== 'string') throw new AppError('Invalid UUID', 400, ERRORS.E400);
 
-  const vm = await prisma.vms.update({ where: { uuid }, data: { status: 'Idle' } });
+  await prisma.$transaction(async (tx) => {
+      // Set VM idle
+      await tx.vms.update({
+          where: { uuid: vm_uuid },
+          data: { status: 'IDLE' }
+      });
 
-  return sendSuccess(res, vm, 'VM stopped', 200);
+      // Get affected batches first
+      const batches = await tx.batches.findMany({
+          where: {
+              vm_uuid: vm_uuid,
+              status: 'RUNNING'
+          },
+          select: {
+              uuid: true
+          }
+      });
+
+      const batchUUIDs = batches.map(b => b.uuid);
+
+      // Terminate batches
+      await tx.batches.updateMany({
+          where: {
+              uuid: {
+                  in: batchUUIDs
+              }
+          },
+          data: {
+              status: 'TERMINATED'
+          }
+      });
+
+      // Terminate related batch processes
+      await tx.batch_processes.updateMany({
+          where: {
+              batch_uuid: {
+                  in: batchUUIDs
+              },
+              process_status: {
+                  in: ['RUNNING', 'QUEUED']
+              }
+          },
+          data: {
+              process_status: 'TERMINATED'
+          }
+      });
+
+      // Unlink processes from batches
+      await tx.processes.updateMany({
+          where: {
+              batch_uuid: {
+                  in: batchUUIDs
+              }
+          },
+          data: {
+              batch_uuid: null
+          }
+      });
+
+  });
+
+  return sendSuccess(res, 'VM terminated with all its batches and uncompleted processes are back to the queue');
 };
+
 
 export const getCurrentStatus = async (req: Request, res: Response) => {
   const { uuid } = req.params;
