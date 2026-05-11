@@ -28,22 +28,22 @@ export const createVm = async (req: Request, res: Response) => {
     },
   });
 
-  if (!vm.uuid) throw new AppError('Failed to create VM', 500, ERRORS.E500);
+  if (!vm) throw new AppError('Failed to create VM', 500, ERRORS.E500);
 
   return sendSuccess(res, { uuid: vm.uuid }, 'VM created', 201);
 };
 
 
 export const deleteVm = async (req: Request, res: Response) => {
-  const { uuid } = req.params;
+  const { vm_uuid } = req.params;
 
-  if (typeof uuid !== 'string') throw new AppError('Invalid UUID', 400, ERRORS.E400);
+  if (typeof vm_uuid !== 'string') throw new AppError('Invalid UUID', 400, ERRORS.E400);
 
-  const existing = await prisma.vms.findUnique({ where: { uuid } });
+  const existing = await prisma.vms.findUnique({ where: { uuid: vm_uuid } });
   if (!existing) throw new AppError('VM not found', 404, ERRORS.E404);
 
   if(existing.status === "IDLE"){
-    await prisma.vms.delete({ where: { uuid } });
+    await prisma.vms.delete({ where: { uuid: vm_uuid } });
   } else {
     throw new AppError('VM can be removed only if it is in IDLE state.', 409, ERRORS.E409VM);
   }
@@ -149,9 +149,9 @@ export const getHistory = async (req: Request, res: Response) => {
 
 export const addHistory = async (req: Request, res: Response) => {
   const { vm_uuid } = req.params;
-  const { batch_uuid, duration, total_cost } = req.body as { batch_uuid: string; duration: number; total_cost: number };
+  const { batch_uuid, total_duration, total_cost } = req.body as { batch_uuid: string; total_duration: number; total_cost: number };
 
-  if (typeof vm_uuid !== 'string' || typeof duration !== 'number') throw new AppError('Invalid input', 400, ERRORS.E400);
+  if (typeof vm_uuid !== 'string') throw new AppError('Invalid input', 400, ERRORS.E400);
 
   const vm = await prisma.vms.findUnique({ where: { uuid: vm_uuid } });
   if (!vm) throw new AppError('VM not found', 404, ERRORS.E404);
@@ -160,7 +160,7 @@ export const addHistory = async (req: Request, res: Response) => {
     data: {
       vm_uuid: vm_uuid,
       batch_uuid: batch_uuid,
-      run_duration: BigInt(duration),
+      run_duration: BigInt(total_duration),
       run_cost: total_cost,
     },
   });
@@ -170,11 +170,11 @@ export const addHistory = async (req: Request, res: Response) => {
 
 
 export const getSpentCost = async (req: Request, res: Response) => {
-  const { uuid } = req.params;
+  const { vm_uuid } = req.params;
 
-  if (typeof uuid !== 'string') throw new AppError('Invalid UUID', 400, ERRORS.E400);
+  if (typeof vm_uuid !== 'string') throw new AppError('Invalid UUID', 400, ERRORS.E400);
 
-  const agg = await prisma.vm_history.aggregate({ where: { vm_uuid: uuid }, _sum: { run_cost: true } });
+  const agg = await prisma.vm_history.aggregate({ where: { vm_uuid: vm_uuid }, _sum: { run_cost: true } });
 
   const spent = agg._sum.run_cost;
 
@@ -183,11 +183,11 @@ export const getSpentCost = async (req: Request, res: Response) => {
 
 
 export const getVmDetails = async (req: Request, res: Response) => {
-  const { uuid } = req.params;
+  const { vm_uuid } = req.params;
 
-  if (typeof uuid !== 'string') throw new AppError('Invalid UUID', 400, ERRORS.E400);
+  if (typeof vm_uuid !== 'string') throw new AppError('Invalid UUID', 400, ERRORS.E400);
 
-  const vm = await prisma.vms.findUnique({ where: { uuid } });
+  const vm = await prisma.vms.findUnique({ where: { uuid: vm_uuid } });
   if (!vm) throw new AppError('VM not found', 404, ERRORS.E404);
 
   return sendSuccess(res, vm, 'VM fetched');

@@ -132,7 +132,7 @@ model vms {
   name       String
   cores      Int
   memory     Int
-  cost       Int
+  cost       Float
   status     String?      @default("IDLE")
   created_at DateTime?    @default(now()) @db.Timestamp(6)
   batches    batches[]

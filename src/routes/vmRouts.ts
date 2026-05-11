@@ -30,20 +30,20 @@ const createVmSchema = z.object({
 });
 
 const addHistorySchema = z.object({
-  batch_uuid: z.string().uuid().optional(),
-  duration: z.number().min(0),
+  batch_uuid: z.string(),
+  total_duration: z.number().min(0),
+  total_cost: z.number().min(0)
 });
 
 router.post('/calc/vm-cost', validate(calcSchema), asyncHandler(calcVmCost));
 router.post('/create', validate(createVmSchema), asyncHandler(createVm));
-router.delete('/delete/:uuid', asyncHandler(deleteVm));
-router.patch('/stop/:uuid', asyncHandler(stopVm));
-
-router.get('/current-status/:uuid', asyncHandler(getCurrentStatus));
-router.get('/history/:uuid', asyncHandler(getHistory));
-router.post('/history/:uuid', validate(addHistorySchema), asyncHandler(addHistory));
-router.get('/spentcost/:uuid', asyncHandler(getSpentCost));
-router.get('/:uuid', asyncHandler(getVmDetails));
+router.delete('/confirm-delete/:vm_uuid', asyncHandler(deleteVm));
+router.patch('/stop/:vm_uuid', asyncHandler(stopVm));
+router.get('/current-status/:vm_uuid', asyncHandler(getCurrentStatus));
+router.get('/history/:vm_uuid', asyncHandler(getHistory));
+router.post('/history/:vm_uuid', validate(addHistorySchema), asyncHandler(addHistory));
+router.get('/spentcost/:vm_uuid', asyncHandler(getSpentCost));
+router.get('/:vm_uuid', asyncHandler(getVmDetails));
 router.get('/', asyncHandler(getAllVms));
 router.get('/all/:status', asyncHandler(getAllByStatus));
 
