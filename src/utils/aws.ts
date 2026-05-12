@@ -1,6 +1,6 @@
 import { DeleteObjectCommand, PutObjectCommand, S3Client, S3ServiceException, waitUntilObjectNotExists } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { EC2Client, RunInstancesCommand, StopInstancesCommand, TerminateInstancesCommand } from "@aws-sdk/client-ec2";
+import { DescribeInstancesCommand, EC2Client, RunInstancesCommand, StopInstancesCommand, TerminateInstancesCommand } from "@aws-sdk/client-ec2";
 import { AppError } from "./AppError.js";
 import { ERRORS } from "@/constants/errorCodes.js";
 
@@ -78,6 +78,53 @@ export const terminateEC2Instance = async (instanceId: string): Promise<void> =>
         console.log(`EC2 instance terminated: ${instanceId}`)
     } catch (e: any) {
         throw new AppError(`Failed to terminate EC2 instance ${instanceId}: ${e?.message ?? e}`, 500, ERRORS.E500)
+    }
+}
+
+/**
+ * Fetches the real-time state of an EC2 instance directly from AWS.
+ * @param instanceId  The EC2 instance ID to query.
+ * @returns           The instance state name (e.g. 'pending' | 'running' | 'stopping' | 'stopped' | 'shutting-down' | 'terminated').
+ */
+export const getEC2InstanceStatus = async (instanceId: string): Promise<string> => {
+    const command = new DescribeInstancesCommand({ InstanceIds: [instanceId] })
+
+    try {
+        const response = await ec2.send(command)
+        const state = response.Reservations?.[0]?.Instances?.[0]?.State?.Name
+        if (!state) throw new Error('No state returned for instance')
+        return state
+    } catch (e: any) {
+        throw new AppError(`Failed to describe EC2 instance ${instanceId}: ${e?.message ?? e}`, 500, ERRORS.E500)
+    }
+}
+
+/**
+ * Fetches the real-time state for multiple EC2 instances in a single API call.
+ * @param instanceIds  List of EC2 instance IDs to query.
+ * @returns            A map of { instanceId -> state name }, e.g. { 'i-abc': 'running' }.
+ *                     Instances not found in the response are omitted from the map.
+ */
+export const getEC2InstancesStatusMap = async (instanceIds: string[]): Promise<Record<string, string>> => {
+    if (instanceIds.length === 0) return {}
+
+    const command = new DescribeInstancesCommand({ InstanceIds: instanceIds })
+
+    try {
+        const response = await ec2.send(command)
+        const map: Record<string, string> = {}
+
+        for (const reservation of response.Reservations ?? []) {
+            for (const instance of reservation.Instances ?? []) {
+                if (instance.InstanceId && instance.State?.Name) {
+                    map[instance.InstanceId] = instance.State.Name
+                }
+            }
+        }
+
+        return map
+    } catch (e: any) {
+        throw new AppError(`Failed to describe EC2 instances: ${e?.message ?? e}`, 500, ERRORS.E500)
     }
 }
 
