@@ -4,7 +4,7 @@ import { sendSuccess } from '@/utils/response.js';
 import { AppError } from '@/utils/AppError.js';
 import { ERRORS } from '@/constants/errorCodes.js';
 import { calculateVMCostAlgo } from '@/utils/algorithms.js';
-import { startWorkerInstance, stopEC2Instance, terminateEC2Instance, getEC2InstanceStatus, getEC2InstancesStatusMap } from '@/utils/aws.js';
+import { startWorkerInstance, stopEC2Instance, terminateEC2Instance } from '@/utils/aws.js';
 
 
 export const calcVmCost = async (req: Request, res: Response) => {
@@ -160,14 +160,7 @@ export const getCurrentStatus = async (req: Request, res: Response) => {
   const vm = await prisma.vms.findUnique({ where: { uuid: vm_uuid } });
   if (!vm) throw new AppError('VM not found', 404, ERRORS.E404);
 
-  // If an EC2 instance is associated, fetch the live state directly from AWS
-  if (vm.instance_id) {
-    const awsState = await getEC2InstanceStatus(vm.instance_id);
-    return sendSuccess(res, { status: vm.status, aws_state: awsState }, 'VM status fetched from AWS');
-  }
-
-  // Fallback: return the status stored in the database
-  return sendSuccess(res, { status: vm.status, aws_state: null }, 'VM status fetched from DB (no EC2 instance linked)');
+  return sendSuccess(res, { status: vm.status }, 'VM status fetched');
 };
 
 
@@ -231,17 +224,7 @@ export const getVmDetails = async (req: Request, res: Response) => {
 
 export const getAllVms = async (req: Request, res: Response) => {
   const vms = await prisma.vms.findMany();
-
-  // Collect all linked EC2 instance IDs and fetch their live states in one API call
-  const instanceIds = vms.map(v => v.instance_id).filter((id): id is string => !!id);
-  const stateMap = await getEC2InstancesStatusMap(instanceIds);
-
-  const enriched = vms.map(v => ({
-    ...v,
-    aws_state: v.instance_id ? (stateMap[v.instance_id] ?? null) : null,
-  }));
-
-  return sendSuccess(res, enriched, 'VMs fetched');
+  return sendSuccess(res, vms, 'VMs fetched');
 };
 
 
