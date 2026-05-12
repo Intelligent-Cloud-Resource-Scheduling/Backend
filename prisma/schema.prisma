@@ -143,3 +143,16 @@ model vms {
 
   @@index([status], map: "idx_vm_status")
 }
+
+// Tracks a single GA scheduling session requested by the client.
+// status lifecycle: NOT_STARTED -> STARTED -> DONE (or FAILED)
+model ga_sessions {
+  id         Int       @id @default(autoincrement())
+  uuid       String    @unique @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  status     String    @default("NOT_STARTED")   // NOT_STARTED | STARTED | DONE | FAILED
+  raw_result String?   // Full JSON payload from the GA engine, stored as text
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  updated_at DateTime? @updatedAt @db.Timestamp(6)
+
+  @@index([status], map: "idx_ga_sessions_status")
+}
