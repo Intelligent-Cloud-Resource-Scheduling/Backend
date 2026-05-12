@@ -5,6 +5,8 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  // SSL is enforced via sslmode=require&sslaccept=strict in DATABASE_URL
+  // CA cert is loaded from global-bundle.pem via NODE_EXTRA_CA_CERTS in prisma.ts
 }
 
 model admins {
