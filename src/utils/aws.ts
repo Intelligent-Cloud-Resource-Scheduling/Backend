@@ -1,6 +1,6 @@
 import { DeleteObjectCommand, PutObjectCommand, S3Client, S3ServiceException, waitUntilObjectNotExists } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { EC2Client, RunInstancesCommand } from "@aws-sdk/client-ec2";
+import { EC2Client, RunInstancesCommand, StopInstancesCommand, TerminateInstancesCommand } from "@aws-sdk/client-ec2";
 import { AppError } from "./AppError.js";
 import { ERRORS } from "@/constants/errorCodes.js";
 
@@ -48,6 +48,36 @@ export const startWorkerInstance = async (name: string): Promise<string> => {
         return instanceId
     } catch (e: any) {
         throw new AppError(`Failed to start EC2 instance: ${e?.message ?? e}`, 500, ERRORS.E500)
+    }
+}
+
+/**
+ * Stops a running EC2 instance (instance is preserved, billing halted).
+ * @param instanceId  The EC2 instance ID to stop.
+ */
+export const stopEC2Instance = async (instanceId: string): Promise<void> => {
+    const command = new StopInstancesCommand({ InstanceIds: [instanceId] })
+
+    try {
+        await ec2.send(command)
+        console.log(`EC2 instance stopped: ${instanceId}`)
+    } catch (e: any) {
+        throw new AppError(`Failed to stop EC2 instance ${instanceId}: ${e?.message ?? e}`, 500, ERRORS.E500)
+    }
+}
+
+/**
+ * Terminates (permanently destroys) an EC2 instance.
+ * @param instanceId  The EC2 instance ID to terminate.
+ */
+export const terminateEC2Instance = async (instanceId: string): Promise<void> => {
+    const command = new TerminateInstancesCommand({ InstanceIds: [instanceId] })
+
+    try {
+        await ec2.send(command)
+        console.log(`EC2 instance terminated: ${instanceId}`)
+    } catch (e: any) {
+        throw new AppError(`Failed to terminate EC2 instance ${instanceId}: ${e?.message ?? e}`, 500, ERRORS.E500)
     }
 }
 

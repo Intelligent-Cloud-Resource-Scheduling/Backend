@@ -4,7 +4,7 @@ import { sendSuccess } from '@/utils/response.js';
 import { AppError } from '@/utils/AppError.js';
 import { ERRORS } from '@/constants/errorCodes.js';
 import { calculateVMCostAlgo } from '@/utils/algorithms.js';
-import { startWorkerInstance } from '@/utils/aws.js';
+import { startWorkerInstance, stopEC2Instance, terminateEC2Instance } from '@/utils/aws.js';
 
 
 export const calcVmCost = async (req: Request, res: Response) => {
@@ -33,6 +33,7 @@ export const createVm = async (req: Request, res: Response) => {
       memory,
       cost,
       instance_id: instanceId,
+      status: "RUNNING"
     },
   });
 
@@ -51,6 +52,10 @@ export const deleteVm = async (req: Request, res: Response) => {
   if (!existing) throw new AppError('VM not found', 404, ERRORS.E404);
 
   if (existing.status === "IDLE") {
+    // Terminate the EC2 instance if one was provisioned
+    if (existing.instance_id) {
+      await terminateEC2Instance(existing.instance_id);
+    }
     await prisma.vms.delete({ where: { uuid: vm_uuid } });
   } else {
     throw new AppError('VM can be removed only if it is in IDLE state.', 409, ERRORS.E409VM);
@@ -65,7 +70,14 @@ export const stopVm = async (req: Request, res: Response) => {
 
   if (typeof vm_uuid !== 'string') throw new AppError('Invalid UUID', 400, ERRORS.E400);
 
-  // Must send termination signal to GA
+  // Fetch VM to get the EC2 instance ID
+  const vm = await prisma.vms.findUnique({ where: { uuid: vm_uuid } });
+  if (!vm) throw new AppError('VM not found', 404, ERRORS.E404);
+
+  // Stop the EC2 instance if one was provisioned
+  if (vm.instance_id) {
+    await stopEC2Instance(vm.instance_id);
+  }
 
   await prisma.$transaction(async (tx) => {
     // Set VM idle
