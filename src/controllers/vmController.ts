@@ -4,6 +4,7 @@ import { sendSuccess } from '@/utils/response.js';
 import { AppError } from '@/utils/AppError.js';
 import { ERRORS } from '@/constants/errorCodes.js';
 import { calculateVMCostAlgo } from '@/utils/algorithms.js';
+import { startWorkerInstance } from '@/utils/aws.js';
 
 
 export const calcVmCost = async (req: Request, res: Response) => {
@@ -19,12 +20,19 @@ export const createVm = async (req: Request, res: Response) => {
 
   const cost = calculateVMCostAlgo(cores, memory);
 
+  // Launch an EC2 instance with the composite name
+  const instanceName = `${name} - Cloud Project Video Worker`;
+  const instanceId = await startWorkerInstance(instanceName);
+
+  // if(!instanceId)  throw new AppError('Failed to launch EC2', 500, ERRORS.E500);
+
   const vm = await prisma.vms.create({
     data: {
       name,
       cores,
       memory,
       cost,
+      instance_id: instanceId,
     },
   });
 
@@ -42,7 +50,7 @@ export const deleteVm = async (req: Request, res: Response) => {
   const existing = await prisma.vms.findUnique({ where: { uuid: vm_uuid } });
   if (!existing) throw new AppError('VM not found', 404, ERRORS.E404);
 
-  if(existing.status === "IDLE"){
+  if (existing.status === "IDLE") {
     await prisma.vms.delete({ where: { uuid: vm_uuid } });
   } else {
     throw new AppError('VM can be removed only if it is in IDLE state.', 409, ERRORS.E409VM);
@@ -60,71 +68,71 @@ export const stopVm = async (req: Request, res: Response) => {
   // Must send termination signal to GA
 
   await prisma.$transaction(async (tx) => {
-      // Set VM idle
-      const updatedVm = await tx.vms.updateMany({
-          where: { uuid: vm_uuid },
-          data: { status: 'IDLE' }
-      });
+    // Set VM idle
+    const updatedVm = await tx.vms.updateMany({
+      where: { uuid: vm_uuid },
+      data: { status: 'IDLE' }
+    });
 
-      if (updatedVm.count === 0) {
-        throw new AppError('VM not found', 404, ERRORS.E404);
+    if (updatedVm.count === 0) {
+      throw new AppError('VM not found', 404, ERRORS.E404);
+    }
+
+    // Get affected batches first
+    const batches = await tx.batches.findMany({
+      where: {
+        vm_uuid: vm_uuid,
+        status: 'RUNNING'
+      },
+      select: {
+        uuid: true
       }
+    });
 
-      // Get affected batches first
-      const batches = await tx.batches.findMany({
-          where: {
-              vm_uuid: vm_uuid,
-              status: 'RUNNING'
-          },
-          select: {
-              uuid: true
-          }
-      });
+    const batchUUIDs = batches.map(b => b.uuid);
 
-      const batchUUIDs = batches.map(b => b.uuid);
+    if (batchUUIDs.length === 0) {
+      return
+    }
 
-      if (batchUUIDs.length === 0) {
-        return
+    // Terminate batches
+    await tx.batches.updateMany({
+      where: {
+        uuid: {
+          in: batchUUIDs
+        }
+      },
+      data: {
+        status: 'TERMINATED'
       }
+    });
 
-      // Terminate batches
-      await tx.batches.updateMany({
-          where: {
-              uuid: {
-                  in: batchUUIDs
-              }
-          },
-          data: {
-              status: 'TERMINATED'
-          }
-      });
+    // Terminate related batch processes
+    await tx.batch_processes.updateMany({
+      where: {
+        batch_uuid: {
+          in: batchUUIDs
+        },
+        process_status: {
+          in: ['RUNNING', 'QUEUED']
+        }
+      },
+      data: {
+        process_status: 'TERMINATED'
+      }
+    });
 
-      // Terminate related batch processes
-      await tx.batch_processes.updateMany({
-          where: {
-              batch_uuid: {
-                  in: batchUUIDs
-              },
-              process_status: {
-                  in: ['RUNNING', 'QUEUED']
-              }
-          },
-          data: {
-              process_status: 'TERMINATED'
-          }
-      });
-
-      // Unlink processes from batches
-      await tx.processes.updateMany({
-          where: {
-              batch_uuid: {
-                  in: batchUUIDs
-              }
-          },
-          data: {
-              batch_uuid: null
-          }
-      });
+    // Unlink processes from batches
+    await tx.processes.updateMany({
+      where: {
+        batch_uuid: {
+          in: batchUUIDs
+        }
+      },
+      data: {
+        batch_uuid: null
+      }
+    });
 
   });
 
@@ -137,7 +145,7 @@ export const getCurrentStatus = async (req: Request, res: Response) => {
 
   if (typeof vm_uuid !== 'string') throw new AppError('Invalid UUID', 400, ERRORS.E400);
 
-  const vm = await prisma.vms.findUnique({ where: { uuid:vm_uuid } });
+  const vm = await prisma.vms.findUnique({ where: { uuid: vm_uuid } });
   if (!vm) throw new AppError('VM not found', 404, ERRORS.E404);
 
   return sendSuccess(res, { status: vm.status }, 'VM status fetched');
