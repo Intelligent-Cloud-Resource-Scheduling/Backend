@@ -9,9 +9,10 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "tsx watch ./src/app.ts",
+    "dev": "npx prisma db push && tsx watch ./src/app.ts",
     "dev:nodemon": "nodemon",
     "build": "tsc && tsc-alias",
+    "prestart": "npx prisma db push",
     "start": "node dist/app.js"
   },
   "keywords": [],

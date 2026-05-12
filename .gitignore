@@ -2,3 +2,5 @@
 .env
 /dist
 /prisma/migrations
+global-bundle.pem
+/prisma/enable-uuid.ts
