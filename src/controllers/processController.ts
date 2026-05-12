@@ -42,7 +42,12 @@ export const calcProcessDurationWithVideoUUID = async (req: Request, res: Respon
 };
 
 export const createProcess = async (req: Request, res: Response) => {
-  const { video_uuid, quality, fps } = req.body;
+  const { video_uuid  } = req.params;
+  const { quality, fps } = req.body;
+
+  if(typeof video_uuid  !== 'string') {
+    throw new AppError("Invalid video uuid format", 400, ERRORS.E400);
+  }
 
   const token = verifyToken(req.headers.authorization || "");
   const userUUID = token.uuid;
