@@ -6,7 +6,6 @@ import planRoutes from '@/routes/planRoutes.js';
 import vmRoutes from '@/routes/vmRouts.js';
 import processRoutes from '@/routes/processRoutes.js';
 import vidoeRoutes from '@/routes/videoRoutes.js';
-import gaRoutes from '@/routes/gaRoutes.js';
 import { errorHandler } from '@/middlewares/error.js';
 import { requestId } from '@/middlewares/requestId.js';
 import cors from "cors";
@@ -36,7 +35,6 @@ App.use('/plans', planRoutes);
 App.use('/vm', vmRoutes);
 App.use('/processes', processRoutes);
 App.use('/videos', vidoeRoutes);
-App.use('/ga', gaRoutes);
 App.get("/", (req: Request, res: Response) => {
     res.send(`Server is running, main route.`)
 })
