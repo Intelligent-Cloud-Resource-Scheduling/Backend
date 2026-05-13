@@ -6,6 +6,8 @@ import { ERRORS } from '@/constants/errorCodes.js';
 import { calculateProcessResourceAlgo } from '@/utils/algorithms.js';
 import { verifyToken } from '@/utils/jwt.js';
 import { PROCESS_STATE } from '@/constants/status.js';
+import { broadcastStatusUpdate } from '@/websocket/processStatus.js';
+
 
 export const calcProcessDuration = async (req: Request, res: Response) => {
   const { duration, quality, fps, size } = req.body;
@@ -89,6 +91,8 @@ export const createProcess = async (req: Request, res: Response) => {
 
     return {process, process_history};
   });
+
+  broadcastStatusUpdate(newProcess.process.uuid, PROCESS_STATE.PENDING);
 
   return sendSuccess(res, newProcess, 'Process created successfully.');
 };
@@ -249,3 +253,35 @@ export const getUserAllProcesses = async (req: Request, res: Response) => {
 
   return sendSuccess(res, result, 'All user processes retrieved (newest to oldest)');
 }
+
+export const updateProcessStatus = async (req: Request, res: Response) => {
+  const { process_uuid } = req.params;
+  const { status } = req.body;
+
+  // Validate the status is a known value
+  const validStatuses = Object.values(PROCESS_STATE);
+  if (!validStatuses.includes(status)) {
+    throw new AppError(`Invalid status. Must be one of: ${validStatuses.join(', ')}`, 400, ERRORS.E400);
+  }
+
+  const process = await prisma.processes.findUnique({
+    where: { uuid: process_uuid }
+  });
+
+  if (!process) {
+    throw new AppError("Process not found", 404, ERRORS.E404);
+  }
+
+  // Save new status to history
+  await prisma.process_history.create({
+    data: {
+      process_uuid,
+      status,
+    }
+  });
+
+  // This pushes the update to the React frontend instantly
+  broadcastStatusUpdate(process_uuid, status);
+
+  return sendSuccess(res, { process_uuid, status }, 'Process status updated.');
+};
